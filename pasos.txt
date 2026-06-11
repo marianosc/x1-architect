@@ -1,0 +1,4 @@
+PASO A (Base): Deje solo MIN_TRADES y PF_NET_IS en ON. (Si aquí encuentra Alphas, el motor está vivo).
+PASO B (Estabilidad): Active R2_STABILITY. (Si el conteo cae a cero, sus Alphas son muy volátiles).
+PASO C (El Verdugo): Active OOS_NEG_SLOPE. (Si cae a cero, sus Alphas están sobre-ajustados al pasado y mueren en el presente).
+PASO D (La Consistencia): Aquí es donde probaremos el Escáner de 3 Etapas. Si aquí todo muere, es que la ley de "ganar en todas las épocas" es demasiado dura para este activo.

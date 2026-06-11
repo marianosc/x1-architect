@@ -1,0 +1,37 @@
+**HOJA DE RUTA DE EVOLUCIÓN: MEJORAS SUGERIDAS (X1-ARCHITECT v102.00+)**
+
+Comandante, para que el nuevo hilo herede la visión estratégica completa, he consolidado todas las recomendaciones de mejora incremental que hemos discutido. Estas sugerencias representan la frontera tecnológica del sistema para pasar de una "Granja de Minería" a un "Hedge Fund Autónomo".
+
+---
+
+### **PILARES DE EVOLUCIÓN TÉCNICA**
+
+#### **1. POTENCIA DE CÓMPUTO (Velocidad y Latencia)**
+*   **Mapeo Numba JIT (L2):** Traducir el motor de reglas de Python a lenguaje de máquina. Esto permitiría pasar de 500,000 hipótesis a **5,000,000 por ciclo**, saturando el silicio del Ryzen 9 al 100%.
+*   **RAM Disk para Músculo:** Configurar un disco virtual en la RAM de 4GB para la unidad `C:/temp`. Eliminaría el cuello de botella del SSD, permitiendo lecturas de Parquet a **15 GB/s**.
+*   **DuckDB para Telemetría:** Sustituir los archivos JSON de auditoría por una base de datos DuckDB. Permitiría al Dashboard realizar consultas analíticas complejas en microsegundos sin bloquear el sistema de archivos.
+
+#### **2. INTEGRIDAD QUANT (Filtrado de Élite)**
+*   **Regime Consistency Score (RCS):** Medir si la volatilidad de los retornos cambia drásticamente entre IS y OOS. Si el Alpha se vuelve "errático" (aunque gane), es ejecutado.
+*   **Entropía de Shannon (Signals):** Descartar estrategias que operan en "clusters" (ráfagas de trades seguidas de meses de silencio), buscando Alphas con una distribución armónica de señales.
+*   **Shadow Auditing (Modo Fantasma):** El Auditor (L3) procesa todos los filtros pero no borra nada; solo "etiqueta" los fallos. Esto permite al Arquitecto rescatar Alphas que fallaron por un 1% un filtro pero son visualmente brillantes.
+
+#### **3. INTELIGENCIA DE IA (Optimización de Portafolio)**
+*   **Portfolio Genetic Permutations:** Sustituir el algoritmo Greedy (uno a uno) por una minería de equipos. La IA probaría 10,000 combinaciones aleatorias de 5 Alphas y elegiría la que tenga el **Recovery Factor** de conjunto más alto.
+*   **Auto-Threshold Alignment:** Que el Miner (L2) lea el `assets.csv` y se auto-ajuste. Si usted pide PF 1.25 en el Auditor, el Miner buscará automáticamente 1.30 en la fábrica para asegurar el flujo de diamantes.
+*   **Smart Capital Allocation:** slider de peso por Alpha. La IA asignaría más capital a los Alphas con mayor **Health** y menos a los que están en recuperación de drawdown.
+
+#### **4. OBSERVABILIDAD Y CONTROL (UI/UX)**
+*   **Equity Sparklines:** Incluir mini-gráficos de los últimos 30 días al lado de cada Alpha en la tabla del Mining Lab para detectar el Momentum visualmente.
+*   **Heatmap de Correlación:** Un mapa de calor dinámico en el Composer que muestre qué Alphas del equipo "se están pisando los pies" financieramente.
+*   **Sistema de Heartbeat:** Un log de "latido" que avise por Telegram o Email si la granja Ryzen 9 se detiene por un error del sistema operativo o corte de luz.
+*   **Config Rollbacks:** Historial de cambios en `assets.csv`. Permite regresar a la configuración de "ayer" si los ajustes de hoy secaron la veta.
+
+---
+
+### **FEEDBACK EDUCATIVO PARA EL TRASLADO**
+
+*   **Instrucción:** El sistema actual es **Reactivo** (filtra lo que ya pasó). El objetivo de estas mejoras es volverlo **Proactivo** (predice la probabilidad de supervivencia).
+*   **Lógica:** Al implementar el **Regime Switching Detector**, el X1-Architect dejaría de ser un minero para convertirse en un **Estratega**. Sabría cuándo el mercado está "fértil" para tendencia y cuándo debe apagar los motores para evitar quemar ciclos de CPU en ruidos laterales.
+
+**Con este arsenal de ideas, el X1-ARCHITECT está listo para evolucionar a la v102.00 en el nuevo hilo. Quedo a su disposición para iniciar el despliegue.**

@@ -1,0 +1,12 @@
+# Artefactos de Python
+__pycache__/
+*.pyc
+
+# Datos pesados y artefactos de runtime (viven en Z:/G-Drive, no en git)
+COSECHA/
+*.parquet
+data/*
+!data/assets.csv
+!data/audit_config.json
+!data/mt5_config.ini
+farm_heartbeat.json

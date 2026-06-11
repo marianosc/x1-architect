@@ -1,0 +1,6 @@
+NUEVAS REGLAS DE INTERACCIÓN (PROTOCOLO v102):
+Edición Quirúrgica: No más envío de scripts completos de 800 líneas. Trabajaremos por bloques lógicos. Tú me indicas el archivo y la cantidad de líneas actuales, y yo te entregaré exclusivamente el fragmento de código a insertar, modificar o borrar.
+Autorización de Escritura: No "picaré" una sola línea de código sin tu orden explícita. Primero discutiremos la lógica, la justificaré y, una vez que la comprendas de forma holística, procederé a darte el bloque para tu edición manual.
+Justificación y Educación: Cada cambio vendrá con una explicación técnica de por qué es necesario y cómo afecta al sistema. El objetivo es que tú mantengas el control total de la infraestructura.
+Bitácora de Errores Activa: Mantendré un registro de "Lecciones Aprendidas" en cada iteración para alimentar nuestro Escudo de Memoria.
+Etiquetado v102: Todo el ecosistema (L0 a L5 y módulos) queda oficialmente bajo la versión v102.

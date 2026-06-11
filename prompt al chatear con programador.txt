@@ -1,0 +1,21 @@
+donde cambio el portafolio manual? te paso lo que tengo ahora
+# 1. Portafolio Manual (Con Peaje Vivo)
+    pool_ids_h_v54 = "-".join([str(s_m['id']) for s_m in st.session_state.manual_pool])
+    if pool_ids_h_v54 != st.session_state.last_pool_hash and st.session_state.manual_pool:
+        f_viva_c = st.session_state.get('live_friction', 0.0001)
+        st.session_state.portfolio_df = X1_Compute_Engine(data_loader_pack_v54, st.session_state.manual_pool, total_friction=f_viva_c)
+        st.session_state.last_pool_hash = pool_ids_h_v54
+        st.session_state.active_portfolio = "MANUAL"
+    
+    col_ia_v54, col_res_v54 = st.columns([1, 2.5])
+    with col_ia_v54:
+        st.subheader("🧠 IA OPTIMIZER")
+
+
+
+RECORDATORIO DE REGLAS 
+Edicion quirurgica, se programa en bloques logicos, entregando el fragmento a insertar, modificar o borrar.
+No se pica codigo sin orden explicita. primero se discute la logica, se justifica. y luego te entregare el bloque para la edicion manual.
+Cada cambio tendra explicacion tecnica para que tu mantengas el control total de la infraestructura.
+Bitacora de errores activa, mantendre registro de lecciones aprendidas en cada iteracion para alimentar el escudo de memoria.
+Propondre en cada iteracion una mejora para pontenciar el sistema.
