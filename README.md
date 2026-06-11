@@ -20,5 +20,10 @@ Granja de minería de estrategias (alphas) de trading sobre datos M1, con pipeli
 
 ## Estado
 
-Snapshot inicial: estado v105 tal como quedó al pausar el proyecto.
-Fase actual: saneamiento (ver auditoría — fusibles de L3 sin implementar, divergencia de salida sintética, EA MQL5 sin salida por tiempo, higiene OOS).
+**v106 — saneamiento en curso.** Hecho:
+- **Motor Único** (`modules/x1_engine.py`): intérprete de reglas, cooldown, salidas (fijas + sintética con rotura bar-a-bar) y fricción consolidados. Todas las capas (L2, L3, L5, optimizer, dashboard) miden con el mismo metro. Corregidos: bug de la sintética en L3 (auditaba 48 velas fijas) y cooldown desigual entre minero y auditor.
+- **Validadores** (`modules/x1_validators.py`): Monkey Test data-driven (metodología Tomillero, port del motor de Marc Cortázar, umbrales 99% IS / 90% OOS, corrección de cadencia) implementado como fusible real en L3; Excursion Score (XS = |MFE|/(|MFE|+|MAE|)) como columnas XS_IS/XS_OOS.
+- L1 conserva High/Low (necesario para el XS — **regenerar los Parquet**).
+- Tests: `python tests/test_x1_engine.py` y `python tests/test_x1_validators.py` (18 pruebas, sin dependencias de pytest/numba). Smoke test sobre datos reales: `python tools/smoke_audit_real.py`.
+
+Pendiente: salida por tiempo y cobertura completa de indicadores en el generador de EAs MQL5; higiene OOS (zona virgen de validación final); rutas por máquina en config; Análisis de Transición como diagnóstico del dashboard; UI nueva (última fase).
