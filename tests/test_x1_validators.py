@@ -23,14 +23,19 @@ N_MONKEYS_TEST = 1000  # suficiente para sanidad; en blanca (numba) van 5000
 # MONKEY TEST
 # -----------------------------------------------------------------------------
 def test_monos_copian_la_cadencia():
-    """Los monos deben operar ~ el mismo número de trades que la estrategia."""
+    """Con la corrección de cadencia los monos operan ~ los mismos trades."""
     ret_1 = RNG.normal(0, 0.002, 4000)
     res = monkey_test(ret_1, n_trades=120, exposure=24, strat_total=0.0,
-                      n_monkeys=N_MONKEYS_TEST)
-    # Con busyUntil la cadencia efectiva baja algo respecto a p*n; tolerancia 35%
-    assert 120 * 0.5 < res['monkey_trades'] < 120 * 1.35, \
+                      n_monkeys=N_MONKEYS_TEST, correct_cadence=True)
+    assert 120 * 0.85 < res['monkey_trades'] < 120 * 1.15, \
         f"Cadencia rota: {res['monkey_trades']:.1f} monos-trades vs 120 reales"
-    print(f"OK  cadencia: estrategia 120 trades, monos {res['monkey_trades']:.1f} de media")
+    # Modo fiel a la herramienta original (sin corrección): cadencia menor
+    res_raw = monkey_test(ret_1, n_trades=120, exposure=24, strat_total=0.0,
+                          n_monkeys=N_MONKEYS_TEST, correct_cadence=False)
+    assert res_raw['monkey_trades'] < res['monkey_trades'], \
+        "Sin corrección la cadencia debería ser menor (modo Marc original)"
+    print(f"OK  cadencia: estrategia 120 trades | monos corregidos "
+          f"{res['monkey_trades']:.1f} | monos modo original {res_raw['monkey_trades']:.1f}")
 
 
 def test_beta_captura_la_tendencia():

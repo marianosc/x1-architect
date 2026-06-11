@@ -80,7 +80,7 @@ def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed):
 
 
 def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
-                n_monkeys=N_MONKEYS_DEFAULT, seed=12345):
+                n_monkeys=N_MONKEYS_DEFAULT, seed=12345, correct_cadence=True):
     """Ejecuta el Monkey Test sobre una zona del histórico.
 
     Args:
@@ -92,6 +92,13 @@ def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
       side        : 'LONG'/'SHORT' - los monos copian la dirección.
       n_monkeys   : tiradas (5000 = herramienta original de Marc).
       seed        : reproducibilidad del veredicto.
+      correct_cadence: la herramienta original usa p = trades/velas, pero el
+                    busyUntil consume ~exposure velas de oportunidad por trade,
+                    así que los monos terminan operando MENOS que la estrategia
+                    (test más blando). Con True se ajusta
+                    p = trades / (velas - trades*(exposure-1)) para que la
+                    cadencia esperada coincida con la real (test más justo
+                    y más exigente).
 
     Returns dict:
       pvalue          : fracción de monos que la estrategia supera [0,1]
@@ -110,7 +117,11 @@ def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
                 'monkey_trades': 0.0, 'prob_entry': 0.0}
 
     exposure = int(max(1, min(exposure, n - 1)))
-    prob_entry = min(1.0, n_trades / n)
+    if correct_cadence:
+        free_bars = n - n_trades * (exposure - 1)
+        prob_entry = min(1.0, n_trades / max(1.0, float(free_bars)))
+    else:
+        prob_entry = min(1.0, n_trades / n)
     fwd = rolling_forward_returns(ret, exposure)
 
     finals, counts = _monkey_core(fwd, prob_entry, exposure, int(n_monkeys), int(seed))
