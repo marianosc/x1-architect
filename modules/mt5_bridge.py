@@ -11,8 +11,8 @@ from pathlib import Path
 # --- RUTAS SOBERANAS (DARWINEX SSD) ---
 MT5_TERMINAL = r"C:\Program Files\Darwinex MetaTrader 5\terminal64.exe"
 MT5_EDITOR = r"C:\Program Files\Darwinex MetaTrader 5\metaeditor64.exe"
-MT5_EXPERTS = r"C:\Users\pc\AppData\Roaming\MetaQuotes\Terminal\6C3C6A11D1C3791DD4DBF45421BF8028\MQL5\Experts"
-MT5_COMMON_FILES = r"C:\Users\pc\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
+MT5_EXPERTS = r"C:\Users\Pc\AppData\Roaming\MetaQuotes\Terminal\6C3C6A11D1C3791DD4DBF45421BF8028\MQL5\Experts"
+MT5_COMMON_FILES = r"C:\Users\Pc\AppData\Roaming\MetaQuotes\Terminal\Common\Files"
 
 def compile_and_run_mt5(ea_name, symbol, tf):
     """Compila el EA, genera el .ini y lanza el backtest en Darwinex."""

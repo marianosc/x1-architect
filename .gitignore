@@ -1,6 +1,10 @@
 # Artefactos de Python
 __pycache__/
 *.pyc
+.venv/
+
+# EAs generados (artefactos, se compilan en MT5)
+*.mq5
 
 # Datos pesados y artefactos de runtime (viven en Z:/G-Drive, no en git)
 COSECHA/
