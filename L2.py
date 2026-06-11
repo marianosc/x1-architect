@@ -90,9 +90,10 @@ def run_factory():
         c_map = {n: i for i, n in enumerate(cols_list)}; ri_map = {c: i for i, c in enumerate(cols_list) if 'Ret_' in c}
         
         all_indicators = [c for c in cols_list if '_sft' in c]
+        # v106: familias ampliadas con el ADN nuevo (todos traducibles a MQL5)
         DNA_FAMILIES = {
-            "TREND": [c for c in all_indicators if any(x in c for x in ['ema', 'adx', 'slope', 'aroon', 'linreg', 'efficiency'])],
-            "MOMENTUM": [c for c in all_indicators if any(x in c for x in ['rsi', 'cmo', 'roc', 'mfi'])],
+            "TREND": [c for c in all_indicators if any(x in c for x in ['ema', 'adx', 'slope', 'aroon', 'linreg', 'efficiency', 'macdh', 'trix', 'plus_di', 'minus_di'])],
+            "MOMENTUM": [c for c in all_indicators if any(x in c for x in ['rsi', 'cmo', 'roc', 'mfi', 'mom_', 'force'])],
             "VOLATILITY": [c for c in all_indicators if any(x in c for x in ['bbw', 'natr', 'std', 'vol_z'])],
             "CYCLE": [c for c in all_indicators if any(x in c for x in ['stoch', 'willr', 'cci'])]
         }

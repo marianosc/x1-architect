@@ -73,7 +73,19 @@ def compute_indicator_block(p, h, l, c, v):
     atr = ta.ATR(h, l, c, p)
     atr_ser = pd.Series(atr)
     block[f'vol_z_{p}'] = (atr_ser - atr_ser.rolling(p).mean()) / (atr_ser.rolling(p).std() + 1e-9)
-    
+
+    # --- v106 ADN AMPLIADO (todos con traducción MQL5 garantizada en el registro) ---
+    block[f'mom_{p}'] = ta.MOM(c, p)
+    _, _, macd_hist = ta.MACD(c, fastperiod=p, slowperiod=p * 2, signalperiod=9)
+    block[f'macdh_{p}'] = macd_hist
+    block[f'trix_{p}'] = ta.TRIX(c, p)
+    block[f'plus_di_{p}'] = ta.PLUS_DI(h, l, c, p)
+    block[f'minus_di_{p}'] = ta.MINUS_DI(h, l, c, p)
+    # Force Index: EMA(p) de (deltaClose * volumen) — réplica exacta en X1_FORCE (MQL5)
+    force_raw = (c - np.roll(c, 1)) * v
+    force_raw[0] = 0.0
+    block[f'force_{p}'] = ta.EMA(force_raw, p)
+
     return block
 
 def layer1():
