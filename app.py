@@ -777,7 +777,10 @@ elif navigation_active_hub == "🎹 COMPOSER":
         
         if st.button("⚡ GENERATE IA PORTFOLIO", type="primary"):
             with st.status("🧠 IA Analizando Confluencia Estructural...", expanded=True) as status_ia:
-                ia_team = run_greedy_selection(data_loader_pack_v54, raw_pool_v54, t_qty_v54, m_pea_v54, max_jac=m_jac_v54, max_mdd=m_mdd_v54)
+                # v106: la IA compone con el MISMO cooldown y fricción que el resto del sistema
+                f_puntos_ia_pre = (st.session_state.hard_slip + st.session_state.hard_spread + st.session_state.hard_comm)
+                ia_team = run_greedy_selection(data_loader_pack_v54, raw_pool_v54, t_qty_v54, m_pea_v54, max_jac=m_jac_v54, max_mdd=m_mdd_v54,
+                                               cooldown=curr_cd_v54, friction_points=f_puntos_ia_pre)
 
                 if ia_team:
                     for s_ia in ia_team: s_ia['Cooldown'] = curr_cd_v54

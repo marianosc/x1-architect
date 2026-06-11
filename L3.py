@@ -1,14 +1,26 @@
 # ##########################################################################
-# SYSTEM: X1-ARCHITECT | VERSION: 104.920 - MASTER TOURNAMENT AUDITOR
+# SYSTEM: X1-ARCHITECT | VERSION: 106.0 - MASTER TOURNAMENT AUDITOR
 # FILE: L3.py
 # ROL: Auditor de Alta Fidelidad con Memoria Retroactiva y Diversidad.
-# ESTRUCTURA: Shared Memory Ryzen 9 | Numba JIT | Jaccard Diversification.
+# UPD v106 (SANEAMIENTO):
+#   - Simulación delegada al Motor Único (x1_engine.simulate): se corrige el
+#     bug histórico de la salida sintética (antes se auditaba a 48 velas fijas
+#     sin rotura de regla) y se aplica el MISMO cooldown que el minero
+#     (Min_Dist_Bars de assets.csv; antes L3 auditaba sin cooldown).
+#   - Fusible monkey_test IMPLEMENTADO (antes existía solo en la UI):
+#     bootstrap data-driven de Marc Cortázar, umbrales Monkey_Train_Min (IS)
+#     y Monkey_Test_Min (OOS) de assets.csv. Último gate del embudo.
+#   - Excursion Score (Tomillero): columnas XS_IS / XS_OOS como telemetría
+#     de calidad de entrada (requiere High/Low en el Parquet; si no están,
+#     quedan en NaN sin matar a nadie).
 # ##########################################################################
 import os, sys, pandas as pd, numpy as np, warnings, json, time
 from joblib import Parallel, delayed
 from scipy import stats
 from pathlib import Path
-from numba import njit
+
+from modules.x1_engine import simulate
+from modules.x1_validators import monkey_test, excursion_score
 
 # Desactivación de ruidos del kernel para el Ryzen 9
 warnings.filterwarnings("ignore")
@@ -23,67 +35,28 @@ G_ZONES = None   # Máscaras de Entrenamiento y OOS
 G_CFG = None     # Configuración de la Constitución (fricción, trades)
 G_FUSES = None   # Estado de los interruptores de seguridad del Dashboard
 
-# --- BLOQUE 2: MOTORES MATEMÁTICOS TURBO ---
-
-def calculate_ulcer_index_real(returns_vector):
-    """Calcula el estrés acumulado de la curva (DD históricos)."""
-    if len(returns_vector) < 5: return 99.0
-    eq = np.cumsum(returns_vector)
-    curve = 100.0 + (eq * 100.0)
-    peaks = np.maximum.accumulate(curve)
-    dds = (curve - peaks) / (peaks + 1e-9)
-    return round(np.sqrt(np.mean(dds**2)) * 100.0, 3)
-
-@njit(cache=True)
-def numba_synthetic_engine(entry_indices, ret_1_v, side_mult):
-    """Calcula el beneficio de salida lógica sin usar bucles de Python."""
-    n = len(entry_indices)
-    res = np.zeros(n)
-    for i in range(n):
-        idx = entry_indices[i]
-        profit = 0.0
-        # Simulación de Hold dinámico hasta 48 velas
-        for b in range(1, 49):
-            fut = idx + b
-            if fut >= len(ret_1_v): break
-            profit += ret_1_v[fut-1] * side_mult
-        res[i] = profit
-    return res
-
 # -----------------------------------------------------------------------------
 # BLOQUE 3: EL VERDUGO (AUDIT_WORKER)
 # -----------------------------------------------------------------------------
 def audit_worker(s_row):
     """Procesa una sola estrategia aplicando el guantelete de sinceridad."""
     d_f, ret_1, c_map, ri, zones, cfg, fuses = G_DF, G_RET_1, G_C_MAP, G_RI_MAP, G_ZONES, G_CFG, G_FUSES
-    
+
     try:
         rule, side, exit_l, _ = s_row
-        side_mult = 1.0 if side == "LONG" else -1.0
-        
-        # A. GENERACIÓN DE SEÑAL
-        mask_e = np.ones(d_f.shape[0], dtype=bool)
-        for sub in rule.split('|'):
-            p = sub.split()
-            v1 = d_f[:, c_map[p[0]]]
-            v2 = d_f[:, c_map[p[2]]] if p[2] in c_map else np.float32(p[2])
-            if p[1] == '>=': mask_e &= (v1 >= v2)
-            elif p[1] == '<=': mask_e &= (v1 <= v2)
-        
-        idx_e = np.where(mask_e)[0]
+
+        # A+B. SIMULACIÓN CON EL MOTOR ÚNICO (señal + cooldown + salida + fricción)
+        # Mismo cooldown que el minero: el auditor mide el MISMO conjunto de trades.
+        try:
+            sim = simulate(d_f, c_map, ri, rule, exit_l, side,
+                           cooldown=cfg['cooldown'], friction_points=cfg['f_points'])
+        except ValueError:
+            return None, "ERR_EXIT"
+
+        idx_e = np.where(sim['mask'])[0]
         if len(idx_e) < 20: return None, "FAIL_TRADES"
-
-        # B. CÁLCULO DE RETORNOS (HÍBRIDO + FRICCIÓN)
-        r_all = np.zeros(d_f.shape[0])
-        if exit_l == "SINTETICA_REVERSE":
-            r_all[idx_e] = numba_synthetic_engine(idx_e, ret_1, side_mult)
-        elif exit_l in ri:
-            r_all[idx_e] = d_f[idx_e, ri[exit_l]] * side_mult
-        else: return None, "ERR_EXIT"
-
-        # Descuento de fricción normalizado por el precio de entrada
-        prices_in = d_f[idx_e, c_map['Close_sft']]
-        r_all[idx_e] -= cfg['f_points'] / (prices_in + 1e-9)
+        r_all = sim['vector']
+        durations = sim['durations']
 
         # C. FILTRO DE ESTANCAMIENTO (PEAK-TO-PRESENT)
         eq_global = np.cumsum(r_all)
@@ -119,14 +92,60 @@ def audit_worker(s_row):
         eq_is_curve = np.cumsum(r_is)
         _, _, r_v, _, _ = stats.linregress(np.arange(len(eq_is_curve)), eq_is_curve)
         r2_real = max(0.0, float(r_v**2))
-        
+
         m_is = np.mean(r_is)
         oer = max(0.0, min((np.mean(r_oos) / m_is) if abs(m_is) > 1e-9 else 0.0, 2.0))
-        
+
         # Puntuación final que integra Beneficio, Estabilidad y Sinceridad
         health = (profit_total * r2_real * (oer + 0.1)) / (np.log10(max_stag_real + 10))
 
-        return [rule, side, exit_l, round(float(pf_is), 3), round(r2_real, 4), max_stag_real, len(r_is), round(float(oer), 4), round(float(profit_total), 4), round(float(health), 4), 100.0], "PASS"
+        # F. MONKEY TEST (FUSIBLE REAL v106 - ÚLTIMO GATE, METODOLOGÍA TOMILLERO)
+        # Los monos copian cadencia, exposición y dirección de la estrategia
+        # sobre la secuencia real de la zona. Umbrales: IS 99% / OOS 90%.
+        z_is = zones['is'].values if hasattr(zones['is'], 'values') else zones['is']
+        z_oos = zones['oos'].values if hasattr(zones['oos'], 'values') else zones['oos']
+        monkey_is_pct, monkey_oos_pct = -1.0, -1.0  # -1 = no evaluado (fusible OFF)
+
+        if fuses.get("monkey_test", True):
+            for z_mask, thresh_key, fail_label, attr in (
+                    (z_is, 'monkey_train_min', "FAIL_MONKEY_IS", 'is'),
+                    (z_oos, 'monkey_test_min', "FAIL_MONKEY_OOS", 'oos')):
+                entries_z = idx_e[z_mask[idx_e]]
+                if len(entries_z) < 1:
+                    continue
+                pos = np.searchsorted(idx_e, entries_z)
+                expo_z = int(max(1, round(float(np.mean(durations[pos])))))
+                strat_total_z = float(r_all[z_mask].sum())
+                res_mk = monkey_test(ret_1[z_mask], len(entries_z), expo_z,
+                                     strat_total_z, side,
+                                     n_monkeys=cfg.get('monkey_n', 5000),
+                                     seed=cfg.get('monkey_seed', 12345))
+                pct = res_mk['pvalue'] * 100.0
+                if attr == 'is': monkey_is_pct = pct
+                else: monkey_oos_pct = pct
+                if pct < cfg[thresh_key]:
+                    return None, fail_label
+
+        # G. EXCURSION SCORE (TELEMETRÍA DE CALIDAD DE ENTRADA - NO MATA)
+        xs_is, xs_oos = np.nan, np.nan
+        if 'High' in c_map and 'Low' in c_map:
+            high_v, low_v = d_f[:, c_map['High']], d_f[:, c_map['Low']]
+            close_v = d_f[:, c_map['Close']]
+            for z_mask, attr in ((z_is, 'is'), (z_oos, 'oos')):
+                entries_z = idx_e[z_mask[idx_e]]
+                if len(entries_z) < 1:
+                    continue
+                pos = np.searchsorted(idx_e, entries_z)
+                xs_val, _ = excursion_score(high_v, low_v, close_v,
+                                            entries_z, durations[pos], side)
+                if attr == 'is': xs_is = round(xs_val, 4)
+                else: xs_oos = round(xs_val, 4)
+
+        return [rule, side, exit_l, round(float(pf_is), 3), round(r2_real, 4),
+                max_stag_real, len(r_is), round(float(oer), 4),
+                round(float(profit_total), 4), round(float(health), 4),
+                round(monkey_is_pct, 1), round(monkey_oos_pct, 1),
+                xs_is, xs_oos], "PASS"
     except: return None, "ERR"
 
 # -----------------------------------------------------------------------------
@@ -152,7 +171,19 @@ def run_radar():
     # 2. CARGA DE CONFIGURACIÓN
     df_a = pd.read_csv(DATA / "assets.csv").dropna(subset=['Symbol'])
     row_a = df_a[df_a['Symbol'].str.contains(str(sym).split('_')[0].upper(), na=False)].iloc[0]
-    G_CFG = {"min_t": int(row_a.get('Min_Trades', 300)), "min_pf": float(row_a.get('Min_PF', 1.15)), "f_points": float(row_a.get('Slippage_Cost', 0.1)) + float(row_a.get('Avg_Spread', 0.1)) + float(row_a.get('Broker_Comm', 0.1)), "Stag_Global": int(row_a.get('Stag_Global', 5000))}
+    def _cfg_val(key, default):
+        v = row_a.get(key, default)
+        return default if pd.isna(v) else v
+
+    G_CFG = {"min_t": int(_cfg_val('Min_Trades', 300)),
+             "min_pf": float(_cfg_val('Min_PF', 1.15)),
+             "f_points": float(_cfg_val('Slippage_Cost', 0.1)) + float(_cfg_val('Avg_Spread', 0.1)) + float(_cfg_val('Broker_Comm', 0.1)),
+             "Stag_Global": int(_cfg_val('Stag_Global', 5000)),
+             # v106: cooldown unificado con el minero + umbrales monkey (Tomillero 99/90)
+             "cooldown": int(_cfg_val('Min_Dist_Bars', 24)),
+             "monkey_train_min": float(_cfg_val('Monkey_Train_Min', 99)),
+             "monkey_test_min": float(_cfg_val('Monkey_Test_Min', 90)),
+             "monkey_n": 5000}
     
     try:
         with open(DATA / "audit_config.json", 'r') as f: G_FUSES = json.load(f)
@@ -174,12 +205,12 @@ def run_radar():
 
     # 5. CONSOLIDACIÓN DE RESULTADOS (STATS MAP)
     passed_batch = [r for r, s in out if s == "PASS"]
-    stats_map = {k: 0 for k in ["FAIL_TRADES", "FAIL_PF_NET", "FAIL_GAP", "FAIL_OOS_EMPTY", "FAIL_NEG_PROFIT", "ERR", "ERR_EXIT", "PASS"]}
+    stats_map = {k: 0 for k in ["FAIL_TRADES", "FAIL_PF_NET", "FAIL_GAP", "FAIL_OOS_EMPTY", "FAIL_NEG_PROFIT", "FAIL_MONKEY_IS", "FAIL_MONKEY_OOS", "ERR", "ERR_EXIT", "PASS"]}
     for _, s in out: stats_map[s] = stats_map.get(s, 0) + 1
 
     # 6. RE-RANKING Y FILTRO JACCARD (DIVERSIDAD)
     if passed_batch:
-        df_all = pd.DataFrame(passed_batch, columns=['Entry','Side','Exit','PF','R2','Stag_Active','Trades','OER','UI','Health','Monkey'])
+        df_all = pd.DataFrame(passed_batch, columns=['Entry','Side','Exit','PF','R2','Stag_Active','Trades','OER','UI','Health','Monkey','Monkey_OOS','XS_IS','XS_OOS'])
         df_all = df_all.sort_values(by=['Health', 'PF'], ascending=False)
         
         final_elite, seen_tokens = [], []

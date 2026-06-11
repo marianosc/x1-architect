@@ -1,71 +1,35 @@
 # ##########################################################################
-# SYSTEM: X1-ARCHITECT | VERSION: 104.355 - BACKTEST ENGINE (RESTORED)
+# SYSTEM: X1-ARCHITECT | VERSION: 106.0 - BACKTEST ENGINE (MOTOR UNICO)
 # FILE: modules/backtest_engine.py
-# ROL: Núcleo matemático con soporte para Salidas Sintéticas y Sortino.
+# ROL: Métricas de riesgo + adaptador del dashboard sobre el Motor Único.
+# UPD v106: señal, cooldown y simulación delegadas a x1_engine. Se conservan
+#           las firmas públicas (fast_signal_generator, apply_time_filter,
+#           X1_Compute_Engine) para no romper app.py/optimizer/L5.
 # ##########################################################################
 import numpy as np
 import pandas as pd
 
+from modules.x1_engine import signal_mask, apply_cooldown, simulate
+
 # -----------------------------------------------------------------------------
-# 1. GENERADOR DE SEÑALES VECTORIZADO
+# 1. GENERADOR DE SEÑALES (WRAPPER LEGACY SOBRE EL MOTOR ÚNICO)
 # -----------------------------------------------------------------------------
 def fast_signal_generator(data_np, rule_str, col_map):
-    """Interpreta reglas lógicas y las transforma en máscaras booleanas."""
+    """Interpreta reglas lógicas y las transforma en máscaras booleanas.
+
+    v106: delega en x1_engine.signal_mask. Conserva el contrato histórico del
+    dashboard: ante regla ilegible devuelve máscara vacía (sin lanzar).
+    """
     try:
-        conditions = str(rule_str).split('|')
-        rows = data_np.shape[0]
-        master_mask = np.ones(rows, dtype=bool)
-        
-        for cond in conditions:
-            cond = cond.strip()
-            if not cond: continue
-            
-            operator = None
-            if '>=' in cond: operator = '>='
-            elif '<=' in cond: operator = '<='
-            elif '==' in cond: operator = '=='
-            elif '>' in cond: operator = '>'
-            elif '<' in cond: operator = '<'
-            
-            if not operator: continue
-            
-            parts = cond.split(operator)
-            left_token = parts[0].strip()
-            right_token = parts[1].strip()
-            
-            if left_token in col_map:
-                val_left = data_np[:, col_map[left_token]]
-            else: return np.zeros(rows, dtype=bool)
-
-            if right_token in col_map:
-                val_right = data_np[:, col_map[right_token]]
-            else:
-                try: val_right = float(right_token)
-                except ValueError: return np.zeros(rows, dtype=bool)
-
-            if operator == '>=': mask = val_left >= val_right
-            elif operator == '<=': mask = val_left <= val_right
-            elif operator == '>': mask = val_left > val_right
-            elif operator == '<': mask = val_left < val_right
-            elif operator == '==': mask = val_left == val_right
-            master_mask &= mask
-        return master_mask
-    except Exception: return np.zeros(data_np.shape[0], dtype=bool)
+        return signal_mask(data_np, str(rule_str), col_map)
+    except Exception:
+        return np.zeros(data_np.shape[0], dtype=bool)
 
 # -----------------------------------------------------------------------------
-# 2. FILTRO TEMPORAL
+# 2. FILTRO TEMPORAL (WRAPPER LEGACY)
 # -----------------------------------------------------------------------------
 def apply_time_filter(mask, cooldown):
-    if cooldown <= 0: return mask
-    indices = np.where(mask)[0]
-    if len(indices) == 0: return mask
-    clean_mask = np.zeros_like(mask, dtype=bool)
-    last_idx = -cooldown - 1
-    for idx in indices:
-        if idx >= last_idx + cooldown:
-            clean_mask[idx] = True
-            last_idx = idx
-    return clean_mask
+    return apply_cooldown(np.asarray(mask, dtype=bool), int(cooldown))
 
 # -----------------------------------------------------------------------------
 # 3. MÉTRICAS DE RIESGO (RESTORED & AUDITED)
@@ -115,55 +79,30 @@ def get_dual_stagnation(equity_curve, entry_mask, mining_start_idx=0):
 # 4. MOTOR ATÓMICO (HYBRID SYNC)
 # -----------------------------------------------------------------------------
 def X1_Compute_Engine(data_pack, strategies_list, total_friction=1.0):
+    """v106: cada estrategia se simula con el Motor Único — el dashboard ve
+    exactamente las mismas cifras que el minero y el auditor."""
     data_values, col_map, ret_indices, dates, _, _, _ = data_pack
     n_rows = data_values.shape[0]
-    close_prices = data_values[:, col_map['Close']]
-    ret_1_v = (pd.Series(close_prices).shift(-1).values - close_prices) / (close_prices + 1e-9)
-    
+
     individual_equities = {}
     total_returns_vector = np.zeros(n_rows)
     all_entry_masks = np.zeros(n_rows, dtype=bool)
-    
+
     for strat in strategies_list:
-        mask = fast_signal_generator(data_values, strat['Entry'], col_map)
-        mask = apply_time_filter(mask, int(strat.get('Cooldown', 24)))
-        if np.sum(mask) == 0: continue
-        all_entry_masks |= mask
-        
-        side_mult = 1.0 if strat['Side'] == 'LONG' else -1.0
-        r_net_final = np.zeros(n_rows)
-        entry_indices = np.where(mask)[0]
+        try:
+            sim = simulate(data_values, col_map, ret_indices, strat['Entry'],
+                           strat['Exit'], strat['Side'],
+                           cooldown=int(strat.get('Cooldown', 24)),
+                           friction_points=float(total_friction))
+        except ValueError:
+            continue
+        if sim['n_trades'] == 0: continue
 
-        if strat['Exit'] == "SINTETICA_REVERSE":
-            parts = strat['Entry'].split('|')
-            for idx in entry_indices:
-                p_acum = 0.0
-                for bars in range(1, 49):
-                    fut = idx + bars
-                    if fut >= n_rows: break
-                    p_acum += ret_1_v[fut - 1] * side_mult
-                    valid = True
-                    for sub in parts:
-                        tk = sub.split()
-                        v1 = data_values[fut, col_map[tk[0]]]
-                        v2 = data_values[fut, col_map[tk[2]]] if tk[2] in col_map else float(tk[2])
-                        if tk[1] == '>=' and not (v1 >= v2): valid = False; break
-                        if tk[1] == '<=' and not (v1 <= v2): valid = False; break
-                    if not valid: break
-                r_net_final[idx] = p_acum
-        else:
-            if strat['Exit'] in ret_indices:
-                r_net_final[mask] = data_values[mask, ret_indices[strat['Exit']]] * side_mult
-            else: continue
-
-        # Fricción Dinámica (ECN Realismo)
-        prices_in = data_values[mask, col_map['Close_sft']]
-        r_net_final[mask] -= total_friction / (prices_in + 1e-9)
-        
-        total_returns_vector += r_net_final
+        all_entry_masks |= sim['mask']
+        total_returns_vector += sim['vector']
         uid = strat.get('id', 'UNK')
-        individual_equities[f"ID_{uid}"] = np.cumsum(r_net_final)
-        
+        individual_equities[f"ID_{uid}"] = np.cumsum(sim['vector'])
+
     n_strats = len(strategies_list)
     df_res = pd.DataFrame(individual_equities, index=dates)
     df_res['Portfolio'] = np.cumsum(total_returns_vector) / (n_strats if n_strats > 0 else 1)

@@ -6,7 +6,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-from modules.backtest_engine import fast_signal_generator
+from modules.x1_engine import simulate
 
 # -----------------------------------------------------------------------------
 # 1. ANALÍTICA DE RIESGO Y SALUD
@@ -46,66 +46,40 @@ def calculate_internal_health(vector_returns, r2_base, pf_base):
 # -----------------------------------------------------------------------------
 # 2. GENERADOR DE VECTORES HÍBRIDO (CURA DE CEGUERA IA)
 # -----------------------------------------------------------------------------
-def get_strategy_vectors(market_data, col_map, ret_indices, rule_str, exit_label, side, r2, pf):
-    """Simula el beneficio real sincronizado con L2/L3."""
+def get_strategy_vectors(market_data, col_map, ret_indices, rule_str, exit_label, side, r2, pf,
+                         cooldown=24, friction_points=0.0):
+    """v106: simulación delegada al Motor Único. La IA ahora ve EXACTAMENTE
+    los mismos trades que el minero y el auditor (mismo cooldown) y puede
+    componer sobre retornos netos de fricción (antes componía en bruto)."""
     try:
-        mask_sig = fast_signal_generator(market_data, rule_str, col_map)
-        if np.sum(mask_sig) < 8: return None
-            
-        n_rows, side_mult = market_data.shape[0], (1.0 if side == 'LONG' else -1.0)
-        holding_mask, final_vector = np.zeros(n_rows, dtype=bool), np.zeros(n_rows, dtype=np.float32)
-        entry_indices = np.where(mask_sig)[0]
-
-        if exit_label == "SINTETICA_REVERSE":
-            # --- SIMULACIÓN SINTÉTICA (SINCRO TOTAL) ---
-            close = market_data[:, col_map['Close']]
-            ret_1_v = (pd.Series(close).shift(-1).values - close) / (close + 1e-9)
-            parts = rule_str.split('|')
-            for idx in entry_indices:
-                profit_acum, duration = 0.0, 0
-                for b in range(1, 49):
-                    fut = idx + b
-                    if fut >= n_rows: break
-                    duration, profit_acum = b, profit_acum + (ret_1_v[fut-1] * side_mult)
-                    # Rotura de lógica bar-a-bar
-                    valid = True
-                    for sub in parts:
-                        tk = sub.split()
-                        v1 = market_data[fut, col_map[tk[0]]]
-                        v2 = market_data[fut, col_map[tk[2]]] if tk[2] in col_map else np.float32(tk[2])
-                        if (tk[1] == '>=' and v1 < v2) or (tk[1] == '<=' and v1 > v2):
-                            valid = False; break
-                    if not valid: break
-                final_vector[idx], holding_mask[idx : idx + duration + 1] = profit_acum, True
-        else:
-            # --- SALIDA TRADICIONAL POR TIEMPO ---
-            if exit_label not in ret_indices: return None
-            bars = int(exit_label.split('_')[1]) if '_' in exit_label else 24
-            final_vector[mask_sig] = market_data[mask_sig, ret_indices[exit_label]] * side_mult
-            for idx in entry_indices: holding_mask[idx : min(idx + bars, n_rows)] = True
-
+        sim = simulate(market_data, col_map, ret_indices, rule_str, exit_label, side,
+                       cooldown=int(cooldown), friction_points=float(friction_points))
+        if sim['n_trades'] < 8: return None
+        final_vector = sim['vector'].astype(np.float32)
         return {
-            'mask': mask_sig, 'holding_mask': holding_mask, 'vector': final_vector, 
+            'mask': sim['mask'], 'holding_mask': sim['holding_mask'], 'vector': final_vector,
             'health': calculate_internal_health(final_vector, r2, pf),
             'mdd_solo': get_max_drawdown_pct(final_vector)
         }
-    except: return None
+    except Exception: return None
 
 # -----------------------------------------------------------------------------
 # 3. ALGORITMO IA GREEDY (BOLD NETTING)
 # -----------------------------------------------------------------------------
-def run_greedy_selection(data_pack, strategies_df, max_items=5, max_corr=0.35, max_jac=0.35, max_mdd=3.0):
-    """v104.930: IA Valiente. El Netting es el único juez del equipo."""
+def run_greedy_selection(data_pack, strategies_df, max_items=5, max_corr=0.35, max_jac=0.35, max_mdd=3.0,
+                         cooldown=24, friction_points=0.0):
+    """v106: IA Valiente sobre el Motor Único (cooldown y fricción explícitos)."""
     m_values, c_map, r_indices, m_dates, c_list, m_zones, n_bars = data_pack
     pool = []
-    
+
     # 1. Preparación de la Élite (Top 400 por Health)
 # --- v104.935: DETECCIÓN AUTOMÁTICA DE COLUMNA DE RÁNKING ---
     sort_col = 'Health' if 'Health' in strategies_df.columns else 'Momentum'
-    
+
     # Ordenamos por la columna detectada (Health o Momentum)
     for idx_s, row_s in strategies_df.sort_values(sort_col, ascending=False).head(400).iterrows():
-        alpha = get_strategy_vectors(m_values, c_map, r_indices, row_s['Entry'], row_s['Exit'], row_s['Side'], row_s['R2'], row_s['PF'])
+        alpha = get_strategy_vectors(m_values, c_map, r_indices, row_s['Entry'], row_s['Exit'], row_s['Side'], row_s['R2'], row_s['PF'],
+                                     cooldown=cooldown, friction_points=friction_points)
         if alpha: pool.append({'id': idx_s, 'data': row_s, **alpha})
 
     if not pool: return []

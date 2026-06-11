@@ -30,20 +30,11 @@ def log(msg, color="\033[94m"):
     sys.stdout.flush()
 
 def get_signal_vector(data, rule, col_map):
-    """Transforma una regla lógica en un vector booleano (0/1) para Jaccard."""
+    """Vector booleano (0/1) para Jaccard. v106: delega en el Motor Único."""
     try:
-        parts = rule.split('|')
-        mask = np.ones(data.shape[0], dtype=bool)
-        for sub in parts:
-            tokens = sub.split()
-            if len(tokens) < 3: continue
-            # tokens[0]=Ind1, tokens[1]=Op, tokens[2]=Ind2 o Valor
-            c1 = data[:, col_map[tokens[0]]]
-            c2 = data[:, col_map[tokens[2]]] if tokens[2] in col_map else np.float32(tokens[2])
-            if tokens[1] == '>=': mask &= (c1 >= c2)
-            elif tokens[1] == '<=': mask &= (c1 <= c2)
-        return mask.astype(np.int8)
-    except Exception: 
+        from modules.x1_engine import signal_mask
+        return signal_mask(data, rule, col_map).astype(np.int8)
+    except Exception:
         return np.zeros(data.shape[0], dtype=np.int8)
 
 def run_cleaner():

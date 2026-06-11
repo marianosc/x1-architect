@@ -1,6 +1,9 @@
 # ##########################################################################
-# SYSTEM: X1-ARCHITECT | VERSION: 104.800 - PURE GENETICS
+# SYSTEM: X1-ARCHITECT | VERSION: 106.0 - PURE GENETICS (MOTOR UNICO)
 # FILE: L2.py
+# UPD v106: señal, cooldown y salida sintética delegadas a modules/x1_engine
+#           (fuente única de verdad). El cooldown ahora se lee de
+#           Min_Dist_Bars en assets.csv (mismo valor que usará el auditor).
 # ##########################################################################
 import os, sys, pandas as pd, numpy as np, random, time, json, shutil
 from joblib import Parallel, delayed
@@ -8,16 +11,7 @@ from tqdm import tqdm
 from pathlib import Path
 from numba import njit
 
-@njit(cache=True)
-def numba_apply_time_filter(mask, cooldown):
-    idx = np.where(mask)[0]
-    if len(idx) == 0: return mask
-    clean = np.zeros(mask.shape, dtype=np.bool_)
-    last = -cooldown - 1
-    for i in idx:
-        if i >= last + cooldown:
-            clean[i] = True; last = i
-    return clean
+from modules.x1_engine import parse_rule, signal_mask, apply_cooldown, synthetic_exit
 
 @njit(cache=True)
 def numba_calc_pf_dynamic(returns, cost_vector):
@@ -41,66 +35,46 @@ def load_mining_params(sym):
         df_a = pd.read_csv(os.path.join(DATA_DIR, "assets.csv"))
         row = df_a[df_a['Symbol'].str.contains(sym.split('_')[0])].iloc[0]
         p["f_points"] = float(row.get('Slippage_Cost', 0.1)) + float(row.get('Avg_Spread', 0.1)) + float(row.get('Broker_Comm', 0.1))
+        # v106: cooldown desde la Constitución para que minero y auditor midan igual
+        p["cooldown"] = int(row.get('Min_Dist_Bars', 24))
     except: pass
     return p
 
 def engine(data, rules, col_map, ret_indices, side, params):
+    """v106: señal/cooldown/sintética delegadas al Motor Único (x1_engine)."""
     res = []
     f_points = params["f_points"]
     side_mult = 1.0 if side == "LONG" else -1.0
-    close_prices = data[:, col_map['Close']]
-    ret_1_v = (pd.Series(close_prices).shift(-1) - close_prices).values / (close_prices + 1e-9)
-    
+    close_prices = data[:, col_map['Close']].astype(np.float64)
+    ret_1_v = np.zeros(len(close_prices))
+    ret_1_v[:-1] = (close_prices[1:] - close_prices[:-1]) / (close_prices[:-1] + 1e-9)
+
     exit_options = [(n, data[:, i] * side_mult) for n, i in ret_indices.items() if params["min_exit"] <= int(n.split('_')[1]) <= params["max_exit"]]
 
     for rule in rules:
         try:
-            parts = rule.split('|'); mask_e = np.ones(data.shape[0], dtype=np.bool_)
-            l_info = []
-            for sub in parts:
-                p = sub.split()
-                c1_idx = col_map[p[0]]
-                c2_idx = col_map[p[2]] if p[2] in col_map else -1
-                val_c = 0.0 if c2_idx != -1 else np.float32(p[2])
-                op_id = 0 if p[1] == '>=' else 1
-                l_info.append((c1_idx, c2_idx, op_id, val_c))
-                if c2_idx != -1: mask_e &= (data[:, c1_idx] >= data[:, c2_idx]) if op_id == 0 else (data[:, c1_idx] <= data[:, c2_idx])
-                else: mask_e &= (data[:, c1_idx] >= val_c) if op_id == 0 else (data[:, c1_idx] <= val_c)
-            
-            mask_e = numba_apply_time_filter(mask_e, params["cooldown"])
+            parsed = parse_rule(rule, col_map)
+            mask_e = signal_mask(data, parsed)
+            mask_e = apply_cooldown(mask_e, params["cooldown"])
             if np.sum(mask_e) < 200: continue
-            
+
             e_idx = np.where(mask_e)[0]
-            cost_vec = f_points / data[e_idx, col_map['Close_sft']]
+            cost_vec = (f_points / data[e_idx, col_map['Close_sft']]).astype(np.float64)
             best_pf, best_exit = 0.0, ""
 
             # 1. Velas Fijas
             for h_name, h_rets in exit_options:
-                pf = numba_calc_pf_dynamic(h_rets[mask_e], cost_vec)
+                pf = numba_calc_pf_dynamic(h_rets[mask_e].astype(np.float64), cost_vec)
                 if pf > best_pf: best_pf, best_exit = pf, h_name
 
-            # 2. Sintética
-            trade_rets_syn = []
-            for idx in e_idx:
-                p_acum = 0.0
-                for b in range(1, 49):
-                    fut = idx + b
-                    if fut >= data.shape[0]: break
-                    p_acum += ret_1_v[fut-1] * side_mult
-                    valid = True
-                    for c1, c2, op, val in l_info:
-                        v1 = data[fut, c1]; v2 = data[fut, c2] if c2 != -1 else val
-                        if op == 0 and not (v1 >= v2): valid = False; break
-                        if op == 1 and not (v1 <= v2): valid = False; break
-                    if not valid: break
-                trade_rets_syn.append(p_acum)
-            
-            pf_syn = numba_calc_pf_dynamic(np.array(trade_rets_syn), cost_vec)
+            # 2. Sintética (rotura de regla bar-a-bar, Motor Único)
+            profits_syn, _ = synthetic_exit(data, e_idx, parsed, ret_1_v, side_mult)
+            pf_syn = numba_calc_pf_dynamic(profits_syn, cost_vec)
             if pf_syn > best_pf: best_pf, best_exit = pf_syn, "SINTETICA_REVERSE"
 
             if best_pf > 1.05:
                 res.append([rule, side, best_exit, round(best_pf, 3)])
-        except: continue
+        except Exception: continue
     return res
 
 def run_factory():
