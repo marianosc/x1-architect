@@ -209,24 +209,27 @@ def run_radar():
     for _, s in out: stats_map[s] = stats_map.get(s, 0) + 1
 
     # 6. RE-RANKING Y FILTRO JACCARD (DIVERSIDAD)
+    final_elite = []
     if passed_batch:
         df_all = pd.DataFrame(passed_batch, columns=['Entry','Side','Exit','PF','R2','Stag_Active','Trades','OER','UI','Health','Monkey','Monkey_OOS','XS_IS','XS_OOS'])
         df_all = df_all.sort_values(by=['Health', 'PF'], ascending=False)
-        
-        final_elite, seen_tokens = [], []
+
+        seen_tokens = []
         for _, row in df_all.iterrows():
             if len(final_elite) >= 500: break
             tks = set(str(row['Entry']).lower().replace('|',' ').replace('_sft','').split())
             if not any((len(tks.intersection(s))/(len(tks.union(s))+1e-9)) > 0.75 for s in seen_tokens):
                 final_elite.append(row); seen_tokens.append(tks)
-        
+
         pd.DataFrame(final_elite).to_csv(out_csv, index=False)
-        
-        # Telemetría para el Commander
-        with open(COSECHA / f"AUDIT_{sym}_{side}_{fam}.json", 'w') as fj:
-            json.dump({"total": len(raw_df), "qualified": len(passed_batch), "harvested": len(final_elite), "details": stats_map}, fj)
+
+    # Telemetría para el Commander: SIEMPRE se escribe, aun en cosecha cero
+    # (la autopsia de mortalidad es un dato válido que no debe perderse).
+    with open(COSECHA / f"AUDIT_{sym}_{side}_{fam}.json", 'w') as fj:
+        json.dump({"total": len(raw_df), "qualified": len(passed_batch),
+                   "harvested": len(final_elite), "details": stats_map}, fj)
 
     if raw_p.exists(): raw_p.unlink()
-    print(f"\033[92m[L3] CICLO FINALIZADO. Élite de {len(final_elite) if passed_batch else 0} Alphas actualizada.\033[0m")
+    print(f"\033[92m[L3] CICLO FINALIZADO. Élite de {len(final_elite)} Alphas actualizada.\033[0m")
 
 if __name__ == '__main__': run_radar()

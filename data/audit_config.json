@@ -4,7 +4,7 @@
     "min_trades": true,
     "wfa_consistency": false,
     "anti_gap": true,
-    "monkey_test": false,
+    "monkey_test": true,
     "oos_neg_slope": true,
     "oos_crash": true,
     "monte_carlo": true

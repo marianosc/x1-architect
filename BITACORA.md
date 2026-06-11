@@ -2,6 +2,85 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-11 — Ciclo 1 del commander (XAUUSD @ H1): AUTOPSIA COMPLETA
+
+**Ejecución:** un ciclo entero (L1 → 8 silos LONG/SHORT × MOMENTUM/TREND/VOLATILITY/CYCLE
+→ L5 → L4) vía `tools/run_commander_cycle.py` (mismo pipeline que `commander.py` pero un
+solo ciclo, sin `input()` y con cronómetro por capa). Fusible `monkey_test` activado en
+`audit_config.json` (estaba en `false`; sin eso el monkey no corre). Fricción 1.0 pt
+(calibrada hoy) y cooldown 25 en minero y auditor. NO se encadenó ciclo 2.
+
+### Resultado global: mortalidad 100% — 1.050.495 candidatos, 0 cosechados
+
+| Silo | Candidatos L2 | FAIL_GAP | Otros | PASS |
+|---|---|---|---|---|
+| LONG MOMENTUM   | 270.450 | 270.450 | 0 | 0 |
+| LONG TREND      | 238.445 | 238.444 | 1 FAIL_PF_NET | 0 |
+| LONG VOLATILITY | 245.779 | 245.779 | 0 | 0 |
+| LONG CYCLE      | 288.291 | 288.290 | 1 FAIL_TRADES | 0 |
+| SHORT MOMENTUM  | 1.381   | 1.381   | 0 | 0 |
+| SHORT TREND     | 4.587   | 4.587   | 0 | 0 |
+| SHORT VOLATILITY| 1.278   | 1.278   | 0 | 0 |
+| SHORT CYCLE     | 284     | 284     | 0 | 0 |
+
+- **FAIL_MONKEY_IS / FAIL_MONKEY_OOS / FAIL_OOS_EMPTY / FAIL_NEG_PROFIT: 0 en todos** —
+  nadie llegó vivo a esos gates.
+- **XS_IS / XS_OOS de los que pasen: N/A** (cero PASS).
+- Cosecha cero = dato válido (ley pasos.txt). MASTER nuevos: ninguno.
+
+### Causa de muerte: el muro FAIL_GAP (diagnóstico, no especulación)
+
+El embudo de L3 evalúa el gap ANTES que PF/trades/monkey, así que con este muro los demás
+contadores no informan nada. Mecanismo verificado con `tools/diag_failgap.py`:
+
+- L2 selecciona por PF neto > 1.05 **solo en Zona 1** (2018-2023). L3 simula la historia
+  completa de 59.531 velas: Zona 0 (2015-2018) + Z1 + Z2 (2023-2025).
+- Con fricción 1.0 (3,3× la 0.3 de la era v105), las equity curves no hacen máximos nuevos
+  durante tramos larguísimos: en 10 reglas de muestra del MASTER viejo, el gap máximo entre
+  picos fue de **22.046 a 59.531 velas** (la mayoría: "sin picos en toda la historia"),
+  contra `Stag_Global = 5000` velas (~10 meses de H1). Ejecución sumaria garantizada.
+- Asimetría SHORT brutal en L2: 284–4.587 candidatos vs 238k–288k LONG. El histórico
+  alcista del oro + fricción 1.0 deja casi sin reglas SHORT netas > 1.05.
+
+**Decisión pendiente para NOTEBOOK (no toqué nada):** ¿el listón es el deseado?
+Opciones que se desprenden del diagnóstico: (a) dejarlo así y aceptar cosechas casi nulas
+con fricción realista; (b) medir el gap desde el primer trade o por zona (hoy un candidato
+muere por no operar/ganar en Zona 0, régimen en el que nunca fue seleccionado);
+(c) recalibrar Stag_Global para fricción 1.0.
+
+### Tiempos por capa (Ryzen 9 9950X3D, numba activa, monkey_n=5000)
+
+| Capa | Tiempo |
+|---|---|
+| L1 refinería | 12,1 s |
+| L2 por silo (500k hipótesis) | 20,0–21,2 s (×8 = 165,6 s) |
+| L3 silos LONG (~240-290k candidatos) | 32,6–37,9 s |
+| L3 silos SHORT (0,3-4,6k candidatos) | 4,9–6,9 s |
+| L5 + L4 | 0,9 s |
+| **Ciclo completo** | **341,5 s (~5,7 min)** |
+
+- **El monkey NO es cuello de botella en este ciclo: ejecutó 0 veces** (nadie superó los
+  gates previos). Su costo real queda sin medir; el tiempo de L3 es ~100% `simulate()`
+  masivo: ~250-290k simulaciones en ~33-38 s ≈ **7.500 sims/s** con 32 procesos.
+  Si algún día el embudo deja pasar miles de candidatos al monkey, ahí sí habrá que
+  medirlo de nuevo (5000 monos × 2 zonas por candidato superviviente).
+- Primera corrida del día: 493,5 s por compilación JIT fría (L3 LONG_CYCLE tardó 159,5 s
+  la primera vez vs 32,6 s la segunda).
+
+### Incidencias de infraestructura encontradas y corregidas en esta corrida
+
+1. **L2 moría en silencio por emojis** al redirigir stdout a archivo (Windows cp1252 no
+   codifica 🚀): el `except` global de L2 convertía el `UnicodeEncodeError` en "0 alphas"
+   sin error visible. El runner fuerza `PYTHONUTF8=1`. Ojo: cualquier automatización
+   futura que capture la salida de L2 necesita lo mismo.
+2. **L3 no escribía el AUDIT json cuando la cosecha era 0** → la autopsia se perdía
+   justo en el caso más informativo. Parcheado en `L3.py`: la telemetría se escribe
+   SIEMPRE (el MASTER csv sigue escribiéndose solo si hay élite).
+3. Fusible `monkey_test` estaba apagado en `data/audit_config.json` → activado.
+
+**Push a Z:** los 8 `AUDIT_XAUUSD_*.json` subidos a `COSECHA` de Z: (los de la era v105
+quedaron respaldados como `.v105.bak`). MASTER nuevos: no hay (cosecha cero).
+
 ## 2026-06-11 — Calibración Python ↔ MT5 del canario (CERRADA, luz verde al commander)
 
 **Contexto:** primer backtest de CANARIO01 en el Strategy Tester de Darwinex (XAUUSD H1,
