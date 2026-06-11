@@ -111,8 +111,9 @@ def analyze_targets():
         "Stag_M15": 300,
         "Stag_H4": 100,
         "Stag_Global": 15000,
-        "Monkey_Train_Min": 95,
-        "Monkey_Test_Min": 40,
+        # v106: umbrales de la metodología Tomillero/Jaume (99% IS / 90% OOS)
+        "Monkey_Train_Min": 99,
+        "Monkey_Test_Min": 90,
         "Slippage_Cost": 0.1,
         "Min_Dist_Bars": 24,
         "MC_Reshuffle_Min": 1.05,

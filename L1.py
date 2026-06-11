@@ -121,7 +121,9 @@ def layer1():
         shift_cols = {f'{k}_sft': df_features[k].shift(1) for k in df_features.columns if 'Ret_' not in k}
         shift_cols['Close_sft'] = pd.Series(c).shift(1).astype(np.float32)
         
-        df_fin = pd.concat([df_res[['DateTime', 'Close']], df_features[[k for k in df_features.columns if 'Ret_' in k]], pd.DataFrame(shift_cols)], axis=1).dropna()
+        # v106: conservamos High/Low para medir MFE/MAE intra-trade (Excursion Score).
+        # No introducen lookahead: solo se usan para valorar excursiones de trades pasados.
+        df_fin = pd.concat([df_res[['DateTime', 'Close', 'High', 'Low']], df_features[[k for k in df_features.columns if 'Ret_' in k]], pd.DataFrame(shift_cols)], axis=1).dropna()
         df_fin.set_index('DateTime', drop=False, inplace=True)
         
         df_fin['Zone'] = 0
