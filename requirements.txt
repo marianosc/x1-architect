@@ -1,0 +1,22 @@
+# X1-ARCHITECT - Dependencias por capa
+# Instalación base (todas las capas):
+numpy
+pandas
+pyarrow          # lectura/escritura Parquet (L1, L2, L3, data_loader)
+joblib           # paralelización Ryzen (L1, L2, L3, L5)
+tqdm             # barras de progreso del minero (L2)
+scipy            # regresiones R2 (L3, optimizer, data_loader)
+
+# Aceleración JIT - OBLIGATORIA en blanca, opcional en la notebook
+# (modules/x1_engine.py funciona sin ella, en modo NumPy puro)
+numba
+
+# Refinería L1 (solo en blanca):
+# TA-Lib requiere binario nativo en Windows; instalar con wheel precompilada:
+#   pip install TA-Lib  (si falla, descargar wheel de
+#   https://github.com/cgohlke/talib-build/releases para la versión de Python)
+TA-Lib
+
+# Dashboard y telemetría (app.py, pulse.py):
+streamlit
+plotly
