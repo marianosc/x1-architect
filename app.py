@@ -628,7 +628,7 @@ elif navigation_active_hub == "⚒️ MINING LAB":
                 with st.status("🏗️ Iniciando Protocolo de Sincronía...", expanded=True) as status:
                     # 1. Generar Código Fuente
                     status.update(label="🧬 Generando código MQL5...")
-                    ea_source = generate_full_mql5_code(act_id, act_alpha)
+                    ea_source = generate_full_mql5_code(act_id, act_alpha, cooldown=curr_cd_v54)
                     
                     # 2. Guardar en Carpeta de Darwinex
                     # Usamos la ruta absoluta que usted me proporcionó
@@ -654,66 +654,19 @@ elif navigation_active_hub == "⚒️ MINING LAB":
                             st.warning("⚠️ El backtest terminó pero no se detectó el archivo de exportación. Verifique si el EA compiló correctamente.")
                     except Exception as e_bridge:
                         st.error(f"❌ FALLO EN EL BRIDGE: {str(e_bridge)}")
-# --- v104.960 BRIDGE: EXPORTACIÓN INDIVIDUAL MT5 ---
-            from modules.translator_mql5 import translate_to_mql5, get_required_handles
-            
+# --- v106 BRIDGE: EXPORTACIÓN INDIVIDUAL MT5 (GENERADOR ÚNICO) ---
+            # El EA se genera con el módulo translator_mql5 v106: salida por
+            # tiempo real, sintética con tope 48, cooldown del minero, shift=2
+            # y cobertura completa del ADN. Adiós al generador duplicado.
+            from modules.translator_mql5 import generate_full_mql5_code as gen_ea_v106
+
             if st.button("🚀 GENERATE MT5 EXPERT (.MQ5)", type="primary"):
-                mql5_logic = translate_to_mql5(act_alpha['Entry'])
-                req_handles = get_required_handles(act_alpha['Entry'])
-                
-                # --- CONSTRUCCIÓN DEL SOURCE CODE ---
-                ea_code = f"""//+------------------------------------------------------------------+
-//|                                     X1-ARCHITECT: {act_id}
-//|                                     Side: {act_alpha['Side']} | Exit: {act_alpha['Exit']}
-//+------------------------------------------------------------------+
-#property strict
-#include <Trade\\Trade.mqh>
-
-CTrade trade;
-"""
-                # Declaración de Handles
-                for ind, per in req_handles:
-                    ea_code += f"int h_{ind}_{per};\n"
-
-                ea_code += f"""
-int OnInit() {{
-"""
-                for ind, per in req_handles:
-                    if ind == 'rsi': ea_code += f"   h_rsi_{per} = iRSI(_Symbol, _Period, {per}, PRICE_CLOSE);\n"
-                    if ind == 'ema': ea_code += f"   h_ema_{per} = iMA(_Symbol, _Period, {per}, 0, MODE_EMA, PRICE_CLOSE);\n"
-                
-                ea_code += f"""   return(INIT_SUCCEEDED);
-}}
-
-void OnTick() {{
-   if(PositionsTotal() > 0) {{
-      // Lógica de Salida
-"""
-                if act_alpha['Exit'] == "SINTETICA_REVERSE":
-                    ea_code += f"      if(!({mql5_logic})) trade.PositionClose(PositionGetTicket(0));\n"
-                else:
-                    bars = act_alpha['Exit'].replace('Ret_', '')
-                    ea_code += f"      // Salida por tiempo ({bars} velas) gestionada por MT5\n"
-
-                ea_code += f"""      return;
-   }}
-
-   // Lógica de Entrada
-   if({mql5_logic}) {{
-      double lot = 0.1;
-      if("{act_alpha['Side']}" == "LONG") trade.Buy(lot);
-      else trade.Sell(lot);
-   }}
-}}
-
-double GetVal(int handle, int shift) {{ 
-   double buf[]; 
-   if(CopyBuffer(handle, 0, shift, 1, buf) > 0) return buf[0];
-   return 0;
-}}
-"""
-                st.code(ea_code, language="cpp")
-                st.download_button(f"💾 Download {act_id}.mq5", ea_code, file_name=f"X1_{act_id}.mq5")               
+                try:
+                    ea_code = gen_ea_v106(act_id, act_alpha, cooldown=curr_cd_v54)
+                    st.code(ea_code, language="cpp")
+                    st.download_button(f"💾 Download {act_id}.mq5", ea_code, file_name=f"X1_{act_id}.mq5")
+                except ValueError as e_tr:
+                    st.error(f"❌ Regla intraducible a MQL5: {e_tr}")
 
 
 # --- PEAJE SOBERANO v102.78 (PUNTOS PUROS) ---
