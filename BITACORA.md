@@ -2,6 +2,38 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 (noche) — PROGRAMA NOCTURNO en rama `experimentos-nocturnos` (entradas incrementales abajo)
+
+### A1 — Ciclo H4 XAUUSD: LOS PRIMEROS 7 PASS OFICIALES DEL PROYECTO
+
+**Hipótesis:** H4 respira donde H1 se ahoga (4× menos velas → menos peaje relativo de fricción
+por unidad de movimiento, menos ruido microestructural).
+**Cambio exacto:** TF=H4 con escala tiempo-equivalente ÷4 de la Constitución vía overrides
+X1_* (Stag_Global 1250, Min_Trades 75, cooldown 6, señales L2 50). **Listones del tribunal
+INTACTOS:** PF 1.25, monkey 99/90 con fricción justa 1.0. Artefactos: `experimentos/A1_H4/`.
+
+**Resultado (1.345.493 candidatos, ciclo 268,7 s):**
+| Silo | Candidatos | Llegan a MK_OOS | PASS |
+|---|---|---|---|
+| LONG MOMENTUM | 325.774 | 2.783 | **6** (4 cosechados tras Jaccard) |
+| LONG TREND | 306.130 | 2.123 | **1** |
+| LONG VOLATILITY / CYCLE | 636.704 | 1.347 | 0 |
+| SHORT (4 silos) | 76.885 | 0 | 0 |
+
+- El embudo H4 está VIVO: ~6.250 candidatos llegaron al monkey OOS (vs 212 en H1).
+- Tasa de paso en MK_OOS ≈ 0,11% — sigue MUY por debajo del 10% del azar (el grueso de la
+  minería random sigue siendo anti-edge), pero la cola extrema EXISTE en H4 y en H1 no existía.
+- **Los 5 cosechados son UN solo patrón económico:** comprar la caída profunda del oro
+  (`roc_55_sft <= -2.79`, ~9 días de caída) con confirmación suave de momentum, o su variante
+  trend (`adx_34>=27 & minus_di_8>=19.7`), TODOS salida `SINTETICA_REVERSE`, TODOS LONG.
+  XS_OOS 0.63-0.68 (entrada con edge fuerte), OER>1 (mejora en OOS), PF 2.96-5.34.
+- **Cautela R4:** monkey_OOS 90.2-92.6 = apenas sobre el listón; con 1.35M de pruebas estos 7
+  pueden ser la cola afortunada (curse of multiplicity → el DSR de B1 habla de esto).
+  Etiqueta: **PROMETEDOR, no validado.** Pendiente C1: estabilidad por semilla + .mq5 listos.
+
+**Veredicto (1 línea):** H4 produce los primeros PASS oficiales; un único patrón "comprar la
+caída"; borderline en OOS → obligatorio C1 (semillas) y Reality Check MT5 antes de creer.
+
 ## 2026-06-12 — Ciclo 3 (monkey con fricción justa): 0/212 pasan MONKEY_OOS → se abre fase de hipótesis
 
 **Implementación del veredicto:** `monkey_test()` acepta `friction_per_trade` (retorno

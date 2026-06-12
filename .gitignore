@@ -14,5 +14,5 @@ data/*
 !data/audit_config.json
 !data/mt5_config.ini
 farm_heartbeat.json
-cycle_run.log
-cycle_timings.json
+cycle_run*.log
+cycle_timings*.json
