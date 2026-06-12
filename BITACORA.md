@@ -2,6 +2,59 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-11 — Ciclo 2 (Zona 0 = contexto): el embudo fluye, el monkey ejecuta, verdugo final = MONKEY_OOS
+
+**Implementación del veredicto (opción b):** `L3.py` ahora juzga estancamiento (FAIL_GAP)
+y profit total sobre `r_all[z1_start:]` (primer índice de Zona 1, pasado vía
+`G_CFG['z1_start']`). Señales/indicadores siguen usando toda la historia: Zona 0 = contexto
+("Hist"), no tribunal. Test nuevo `tests/test_L3_zona0.py` (3/3): sana-en-Z1+Z2 que pierde
+en Z0 sobrevive (stag 30); estancada DENTRO de Z1/Z2 muere FAIL_GAP; con el criterio viejo
+(z1_start=0) la primera moría — regresión confirmada.
+
+### Autopsia ciclo 2: 1.050.122 candidatos, 0 cosechados — pero el embudo cambió de forma
+
+| Silo | Candidatos | FAIL_GAP | FAIL_TRADES | FAIL_PF_NET | MONKEY_IS | MONKEY_OOS | PASS |
+|---|---|---|---|---|---|---|---|
+| LONG MOMENTUM   | 270.204 | 270.093 | 39 | 8  | 25 | 39 | 0 |
+| LONG TREND      | 238.076 | 237.972 | 44 | 1  | 2  | 57 | 0 |
+| LONG VOLATILITY | 245.877 | 245.741 | 35 | 21 | 16 | 64 | 0 |
+| LONG CYCLE      | 288.381 | 288.357 | 18 | 0  | 0  | 6  | 0 |
+| SHORT (4 silos) | 7.584   | 7.584   | 0  | 0  | 0  | 0  | 0 |
+
+- **El muro se desplazó como esperaba la notebook:** 375 candidatos LONG cruzaron el gap
+  (vs 2 en el ciclo 1) y recorrieron el resto del embudo: 136 FAIL_TRADES, 30 FAIL_PF_NET,
+  43 FAIL_MONKEY_IS y **166 FAIL_MONKEY_OOS — el verdugo final. Todo el que llegó al último
+  gate murió en el listón OOS de 90%.** Cosecha cero de nuevo = dato válido: el monkey está
+  haciendo exactamente su trabajo (nada de lo minado tiene edge OOS que supere al azar).
+- FAIL_GAP sigue matando al 99,95% **pero ya por la razón correcta**: con fricción 1.0,
+  la mayoría de candidatos se estanca >5000 velas dentro del propio Z1+Z2 (no por Zona 0).
+- SHORT: sin cambios (7.584 candidatos, todos FAIL_GAP; el oro alcista no da reglas SHORT
+  netas que progresen).
+- XS_IS/XS_OOS: N/A otra vez (cero PASS).
+
+### Costo real del monkey a 5000 monos: NO es cuello de botella
+
+Primera medición empírica (209 candidatos llegaron al monkey, ~375 invocaciones de
+`monkey_test` de 5000 monos × 2 zonas):
+
+| Silo | L3 ciclo 1 (sin monkey) | L3 ciclo 2 (con monkey) | Llamadas monkey |
+|---|---|---|---|
+| LONG MOMENTUM | 35,7 s | 67,9 s | ~103 |
+| LONG TREND | 33,7 s | 35,9 s | ~116 |
+| LONG VOLATILITY | 37,9 s | 34,0 s | ~144 |
+| LONG CYCLE | 32,6 s | 40,6 s | ~12 |
+
+El +32 s de LONG_MOMENTUM es **compilación JIT de primera vez** del kernel del monkey
+(cacheada en disco después): los silos siguientes corrieron cientos de monkey-calls por
+~0-8 s extra (~20-80 ms por llamada de 5000 monos). **Veredicto: a esta tasa de
+supervivientes el monkey cuesta segundos por silo; no hay nada que optimizar.** Ciclo
+completo: 379,4 s (~6,3 min; +38 s vs ciclo 1).
+
+**Para la lectura de NOTEBOOK:** el sistema está sano (embudo ordenado, monkey activo y
+letal, telemetría completa). La pregunta ya no es infraestructura sino minería: si tras N
+ciclos el MONKEY_OOS al 90% sigue matando al 100% de los finalistas, lo que falta es
+calidad de hipótesis (familias/ADN/targets), no más candidatos.
+
 ## 2026-06-11 — Ciclo 1 del commander (XAUUSD @ H1): AUTOPSIA COMPLETA
 
 **Ejecución:** un ciclo entero (L1 → 8 silos LONG/SHORT × MOMENTUM/TREND/VOLATILITY/CYCLE

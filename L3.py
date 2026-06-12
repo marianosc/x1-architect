@@ -59,17 +59,25 @@ def audit_worker(s_row):
         durations = sim['durations']
 
         # C. FILTRO DE ESTANCAMIENTO (PEAK-TO-PRESENT)
-        eq_global = np.cumsum(r_all)
+        # v106.1 (veredicto notebook, ciclo 1): Zona 0 = contexto ("Hist"),
+        # NO tribunal. El minero selecciona por PF solo en Zona 1, así que
+        # estancamiento y profit total se juzgan desde z1_start; juzgar la
+        # historia completa hacía que FAIL_GAP ejecutara al 99.999% por no
+        # ganar en un régimen (2015-2018) en el que nadie fue seleccionado.
+        # Las señales/indicadores siguen calculándose sobre toda la historia.
+        z1s = int(cfg.get('z1_start', 0))
+        r_judge = r_all[z1s:]
+        eq_global = np.cumsum(r_judge)
         peaks = np.maximum.accumulate(eq_global)
         peak_hits = np.where(np.diff(peaks, prepend=-1e-9) > 0)[0]
-        
+
         if len(peak_hits) > 0:
             # Hueco entre picos históricos
             gap_internal = np.max(np.diff(peak_hits)) if len(peak_hits) > 1 else 0
             # Hueco desde el último pico hasta el presente (Sinceridad Total)
-            gap_to_now = (len(r_all) - 1) - peak_hits[-1]
+            gap_to_now = (len(r_judge) - 1) - peak_hits[-1]
             max_stag_real = int(max(gap_internal, gap_to_now))
-        else: max_stag_real = len(r_all)
+        else: max_stag_real = len(r_judge)
 
         if fuses.get("anti_gap", True) and max_stag_real > cfg['Stag_Global']:
             return None, "FAIL_GAP"
@@ -84,8 +92,8 @@ def audit_worker(s_row):
         pf_is = np.sum(r_is[r_is > 0]) / (abs(np.sum(r_is[r_is < 0])) + 1e-9)
         if pf_is < cfg['min_pf']: return None, "FAIL_PF_NET"
         
-        # El balance final de la vida entera debe ser positivo
-        profit_total = np.sum(r_all)
+        # El balance final debe ser positivo (desde Zona 1: Z0 es contexto)
+        profit_total = np.sum(r_judge)
         if profit_total <= 0: return None, "FAIL_NEG_PROFIT"
 
         # E. CÁLCULO DE SALUD (RANKING HEALTH)
@@ -183,7 +191,10 @@ def run_radar():
              "cooldown": int(_cfg_val('Min_Dist_Bars', 24)),
              "monkey_train_min": float(_cfg_val('Monkey_Train_Min', 99)),
              "monkey_test_min": float(_cfg_val('Monkey_Test_Min', 90)),
-             "monkey_n": 5000}
+             "monkey_n": 5000,
+             # v106.1: primer índice de Zona 1 — desde aquí se juzga el
+             # estancamiento y el profit (Zona 0 = contexto, no tribunal)
+             "z1_start": int(np.argmax(df_f['Zone'].values == 1)) if (df_f['Zone'] == 1).any() else 0}
     
     try:
         with open(DATA / "audit_config.json", 'r') as f: G_FUSES = json.load(f)
