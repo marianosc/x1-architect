@@ -14,9 +14,10 @@ data = base.values.astype(np.float32)
 cm = {n: i for i, n in enumerate(base.columns)}
 ri = {n: i for i, n in enumerate(base.columns) if "Ret_" in n}
 
-finales = pd.concat([
-    pd.read_csv("experimentos/A1_H4/MASTER_XAUUSD_H4_LONG_MOMENTUM.csv"),
-    pd.read_csv("experimentos/A1_H4/MASTER_XAUUSD_H4_LONG_TREND.csv")])
+CSVS = sys.argv[1:] if len(sys.argv) > 1 else [
+    "experimentos/A1_H4/MASTER_XAUUSD_H4_LONG_MOMENTUM.csv",
+    "experimentos/A1_H4/MASTER_XAUUSD_H4_LONG_TREND.csv"]
+finales = pd.concat([pd.read_csv(p) for p in CSVS])
 
 print("finalista | dur_media | dur_max | solape (cooldown 6)")
 for _, r in finales.iterrows():

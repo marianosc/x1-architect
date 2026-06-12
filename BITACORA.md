@@ -60,6 +60,36 @@ no como filtro de selección (sería lookahead). La accionable para seleccionar 
 cosecha histórica de salidas largas; corregido el lente, XS_IS es el primer predictor IS→OOS
 real del proyecto.
 
+### C1 — Estabilidad por semilla de los finalistas H4: el TEMA es estable, las reglas no
+
+**Cambio exacto:** re-minado virgen (MASTER borrado antes de cada corrida para evitar la
+re-auditoría retroactiva) de LONG TREND y LONG MOMENTUM H4, 2 semillas frescas cada uno.
+Artefactos: `experimentos/C1_seeds/`.
+
+| Semilla | TREND PASS | MOMENTUM PASS |
+|---|---|---|
+| A1 (original) | 1 | 6 |
+| seed 1 | 2 | 5 |
+| seed 2 | 2 | 6 |
+
+- **MOMENTUM: `roc_55_sft <= -2.79` reaparece en TODAS las semillas** (con confirmaciones
+  variables). Patrón estable del paisaje — pero sigue con solape ~2× (FRONTERA*).
+- **TREND: el tema reaparece, la regla no.** Las 5 reglas PASS entre semillas comparten la
+  estructura "ADX/aroon presente + presión alcista DÉBIL (plus_di≤18 / minus_di alto /
+  macdh<0) → comprar" pero ninguna se repite literal. De las 4 nuevas, solo
+  `aroon_120>=-3.42 & plus_di_34<=17.77` es limpia de solape (1.0×).
+- **Set honesto final de la noche: 2 reglas** (`adx_34>=27 & minus_di_8>=19.7` de A1 y
+  `aroon_120>=-3.42 & plus_di_34<=17.77` de C1-s1), mismo tema económico, solape 1.0×,
+  mk_OOS 92.6 / 91.1. Con 1.35M de pruebas por ciclo siguen siendo FRONTERA (multiplicidad).
+- **EAs listos y compilados (0 errors):** `experimentos/EAs/H4TREND01.mq5` y `H4TREND02.mq5`
+  (cooldown 6). **Plan Reality Check MT5 (no corrido desatendido):** Strategy Tester XAUUSD
+  H4 2023-06-05→2025-12-09, comparar trades vs `x1_engine.simulate` con el comparador del
+  canario adaptado; criterio: match >95% y residual <0.5 pts%.
+
+**Veredicto (1 línea):** el tema "comprar debilidad en contexto de tendencia H4" es estable
+por semilla y honesto de solape; las reglas individuales son intercambiables → es un
+CANDIDATO A HIPÓTESIS DIRIGIDA, no un alpha puntual.
+
 ### A1 — Ciclo H4 XAUUSD: LOS PRIMEROS 7 PASS OFICIALES DEL PROYECTO
 
 **Hipótesis:** H4 respira donde H1 se ahoga (4× menos velas → menos peaje relativo de fricción
