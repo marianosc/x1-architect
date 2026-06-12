@@ -16,3 +16,6 @@ data/*
 farm_heartbeat.json
 cycle_run*.log
 cycle_timings*.json
+ghost_*.log
+b3_*.log
+fase*_done.txt
