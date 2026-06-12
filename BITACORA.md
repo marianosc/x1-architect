@@ -2,6 +2,33 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 — FASE 3: M30 nulo limpio + EURUSD H4 "9.928 PASS" = DATOS PODRIDOS (descartado entero)
+
+**M30 XAUUSD** (escala ×2 desde H1: Stag 10000, Min_Trades 600, cooldown 50, señales 400):
+**0 PASS.** El prior bajo se confirma: con fricción realista el peaje relativo ahoga a M30
+(SHORT colapsa a 1-19 candidatos en L2). Mapa de timeframes XAUUSD cerrado: M30 muerto,
+H1 estéril, H4 vivo-pero-vacío bajo lente honesto.
+
+**EURUSD H4 — LA TRAMPA DE LA NOCHE:** 9.928 PASS con PF de 24-26 y pf_oos de 114 (!).
+Demasiado bueno para ser verdad, y lo era. Auditoría (`tools/audit_eurusd_anomalia.py`):
+- Retorno medio **+287 bps por trade** con 8 velas de tenencia — imposible para EURUSD.
+- **893 saltos >1% en H4**, repartidos uniformes (80-118 POR AÑO, 2015-2025).
+- Top saltos: **±12-16% en costuras de fin de mes** (2015-11-30→12-01: 1.056→1.186;
+  2022-09-30→10-01: 0.980→1.135; 2025 con reversas de −12% mensuales). EURUSD jamás cotizó
+  esos niveles en esas fechas: el CSV fuente es una **concatenación con bases distintas por
+  tramo** (¿futuros con roll sin ajustar? ¿mezcla de fuentes?).
+- Mecanismo del falso edge: los escalones revierten en la serie pegada → las reglas de
+  `roc` extremo los cosechan en AMBAS direcciones; los monos (timing aleatorio) no.
+**Veredicto: cosecha EURUSD descartada al 100%. Pipeline EURUSD BLOQUEADO hasta re-descargar
+datos limpios.** Ojo: el `X1_FULL_EURUSD_H1.parquet` histórico de la COSECHA de Z: viene del
+MISMO CSV — cualquier resultado EURUSD previo está bajo la misma sombra.
+
+**Dos pendientes de Constitución EURUSD para Mariano:** (1) la fricción de assets.csv
+(0.5+0.2+0.3 = 1.0 pts sobre precio ~1.1 = 83%/trade) está mal escalada — esta noche se usó
+override provisional 0.0001 (~1 pip); falta calibración canario EURUSD. (2) Propuesta: gate
+de CALIDAD DE DATOS en L1 (abortar/alertar si saltos>1% superan un umbral por año — XAUUSD
+tiene 9/año, este EURUSD 81/año).
+
 ## 2026-06-12 — FASE 2: RE-MAPEO CON EL LENTE CORREGIDO — la cosecha de la semana queda en CERO real
 
 **Verificación del fix (fantasma v107, 20k LONG MOMENTUM H1):** el artefacto desapareció —

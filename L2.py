@@ -41,6 +41,9 @@ def load_mining_params(sym):
         p["cooldown"] = int(row.get('Min_Dist_Bars', 24))
     except: pass
     # Overrides por experimento (marco nocturno R3): nunca editar assets.csv.
+    if os.environ.get("X1_F_POINTS"):
+        p["f_points"] = float(os.environ["X1_F_POINTS"])
+        log(f"OVERRIDE X1_F_POINTS: {p['f_points']}")
     if os.environ.get("X1_COOLDOWN"):
         p["cooldown"] = int(float(os.environ["X1_COOLDOWN"]))
         log(f"OVERRIDE X1_COOLDOWN: {p['cooldown']}")

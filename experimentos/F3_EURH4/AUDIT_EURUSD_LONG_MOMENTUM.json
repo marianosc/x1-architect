@@ -1,0 +1,1 @@
+{"total": 211883, "qualified": 3783, "harvested": 500, "details": {"FAIL_TRADES": 31816, "FAIL_PF_NET": 17753, "FAIL_GAP": 53126, "FAIL_OOS_EMPTY": 0, "FAIL_NEG_PROFIT": 12, "FAIL_MONKEY_IS": 14711, "FAIL_MONKEY_OOS": 90682, "ERR": 0, "ERR_EXIT": 0, "PASS": 3783}}

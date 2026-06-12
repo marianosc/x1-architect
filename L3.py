@@ -208,7 +208,7 @@ def run_radar():
                    ("Stag_Global", "X1_STAG_GLOBAL"), ("cooldown", "X1_COOLDOWN"),
                    ("monkey_train_min", "X1_MONKEY_TRAIN_MIN"),
                    ("monkey_test_min", "X1_MONKEY_TEST_MIN"),
-                   ("monkey_n", "X1_MONKEY_N")):
+                   ("monkey_n", "X1_MONKEY_N"), ("f_points", "X1_F_POINTS")):
         if os.environ.get(env):
             G_CFG[k] = type(G_CFG[k])(float(os.environ[env]))
             print(f"\033[93m[L3] OVERRIDE {env}: {k} = {G_CFG[k]}\033[0m")

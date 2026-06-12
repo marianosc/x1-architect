@@ -1,5 +1,51 @@
 # EXPERIMENTOS NOCTURNOS — 2026-06-12
 
+# ═══ ACTUALIZACIÓN POST-FIX v107 (Fases 1-4, opción B aprobada) ═══
+
+## TOP-3 HALLAZGOS (versión final, post-fix)
+
+1. **v107 implementado y verificado** (posición única, default; 36/36 tests; mergeado a main):
+   el artefacto desapareció (Spearman solape↔mk_oos +0.425 → +0.036) y bajo el lente honesto
+   **la cosecha completa de la semana era espejismo: CERO supervivientes** — caen los 7 PASS
+   oficiales de H4, caen los 2 "honestos" de C1 re-auditados (mk_oos 79.5/40.2), y los mapas
+   H1/H4/M30/H1C4 dan 0 PASS sobre ~4,5M de candidatos.
+2. **XS_IS no es robusto bajo v107** (+0.076 global, n.s. en el subset corto): el +0.36 de
+   anoche era en gran parte gradiente de palanca entre cohortes; lo que el lente limpio deja
+   visible es la **maldición del ganador** en estado puro (decil más alto de monkey_is → el
+   PEOR pf_oos: 1.652 vs 1.865).
+3. **EURUSD H4 "9.928 PASS" = datos podridos**: costuras de ±12-16% en fines de mes (el CSV
+   es una concatenación con bases distintas), 81 saltos >1% por año — descartado el 100% de
+   la cosecha, pipeline EURUSD bloqueado hasta datos limpios, y propuesto un gate de calidad
+   de datos en L1.
+
+## TABLA COMPARATIVA: viejo lente (apilado) vs nuevo lente (v107 posición única)
+
+| Mapa | Viejo lente | Nuevo lente v107 | Lectura |
+|---|---|---|---|
+| H1 XAUUSD oficial | 0/212 en MK_OOS (mezcla contaminada) | 0 PASS; frontera vacía hasta mk_oos≥50/PF 1.05/XS | H1 estéril — confirmado con instrumento limpio |
+| H4 XAUUSD escalado | **7 PASS** (A1) + tema estable (C1) | **0 PASS**; mk_IS ahora mata (la palanca regalaba IS=100) | Los primeros "PASS oficiales" eran apilamiento |
+| 2 honestos C1 (solape 1.0×) | PASS 99/90 | **FAIL** (mk_oos 79.5 y 40.2; −37% de trades) | La media de solape escondía trades apilados |
+| H1C4 (B3, prior de Mariano) | 0 PASS (nulo condicionado al bug) | 0 PASS (**nulo real**) | El contexto H4 no desbloquea H1 |
+| M30 XAUUSD | no corrido | 0 PASS | Prior bajo confirmado; mapa de TFs cerrado |
+| EURUSD H4 | no corrido | 9.928 "PASS" → **artefacto de DATOS** | CSV con costuras mensuales; descartado entero |
+| Fantasma/correlaciones | XS_IS +0.36 "el filtro que faltaba" | XS_IS +0.076 / n.s. — no robusto | El predictor era en parte la palanca |
+
+## RECOMENDACIÓN FINAL
+
+1. **Aprobar el Min_Trades dinámico** (25% de ocupación de Z1 / espaciado, floor 30 — tabla
+   en BITACORA): sin esto, el embudo v107 castiga estructuralmente a las salidas largas.
+2. **Gate de calidad de datos en L1** (umbral de saltos >1%/año) + re-descargar EURUSD limpio
+   + calibración canario EURUSD (la fricción de assets.csv está mal escalada: 83%/trade).
+3. **La minería aleatoria sobre este ADN está agotada** — medida con instrumento ya confiable.
+   El siguiente paso con mejor relación señal/esfuerzo: **hipótesis dirigidas formuladas
+   ex-ante** (la primera candidata: el tema "comprar debilidad en tendencia H4", que fue
+   estable por semilla, re-formulado como hipótesis y testeado en datos frescos + MT5 — no
+   re-minado), y recién después ADN nuevo.
+4. **Reality Check MT5: SIN candidatos** tras el re-mapeo (los EAs H4TREND01/02 quedan en
+   `experimentos/EAs/` como referencia histórica del artefacto).
+
+# ═══ INFORME ORIGINAL DE LA NOCHE (pre-fix, para trazabilidad) ═══
+
 ## TOP-3 HALLAZGOS DE LA NOCHE (3 frases)
 
 1. **El monkey premiaba apilamiento, no timing:** el motor imputa Ret_N en cada entrada con
