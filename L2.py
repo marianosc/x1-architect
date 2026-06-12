@@ -103,7 +103,8 @@ def run_factory():
             "TREND": [c for c in all_indicators if any(x in c for x in ['ema', 'adx', 'slope', 'aroon', 'linreg', 'efficiency', 'macdh', 'trix', 'plus_di', 'minus_di'])],
             "MOMENTUM": [c for c in all_indicators if any(x in c for x in ['rsi', 'cmo', 'roc', 'mfi', 'mom_', 'force'])],
             "VOLATILITY": [c for c in all_indicators if any(x in c for x in ['bbw', 'natr', 'std', 'vol_z'])],
-            "CYCLE": [c for c in all_indicators if any(x in c for x in ['stoch', 'willr', 'cci'])]
+            # B2: hour/dow (sesion) viven en CYCLE: la estructura horaria es ciclica
+            "CYCLE": [c for c in all_indicators if any(x in c for x in ['stoch', 'willr', 'cci', 'hour', 'dow'])]
         }
         
         pool = DNA_FAMILIES.get(fam.upper(), all_indicators)

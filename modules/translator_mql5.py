@@ -72,6 +72,19 @@ REGISTRY = {
 
 # Funciones inline (réplicas exactas de las fórmulas de L1 / TA-Lib)
 HELPERS = {
+    'hour': """
+double X1_HOUR(int s) {
+   // hora de la vela referenciada (L1: DateTime.dt.hour, broker UTC+2)
+   MqlDateTime t; TimeToStruct(iTime(_Symbol, _Period, s), t);
+   return (double)t.hour;
+}""",
+    'dow': """
+double X1_DOW(int s) {
+   // dia de semana. L1 guarda pandas dayofweek+1 (1=Lun..5=Vie), que para
+   // dias habiles coincide EXACTO con MqlDateTime.day_of_week (domingo=0).
+   MqlDateTime t; TimeToStruct(iTime(_Symbol, _Period, s), t);
+   return (double)t.day_of_week;
+}""",
     'bbw': """
 double X1_BBW(int hBands, int s) {
    // (Upper - Lower) / (Middle + 1e-6)  — idéntico a L1
@@ -190,6 +203,13 @@ def _resolve_operand(token, shift_expr):
 
     if low == 'close':
         return f'iClose(_Symbol, _Period, {shift_expr})', None, None
+
+    # B2: features de sesión sin período (hour/dow de la vela referenciada).
+    # MQL5 no tiene TimeHour/TimeDayOfWeek (eran MQL4): se usa TimeToStruct.
+    if low == 'hour':
+        return f'X1_HOUR({shift_expr})', None, 'hour'
+    if low == 'dow':
+        return f'X1_DOW({shift_expr})', None, 'dow'
 
     m = re.match(r'^([a-z_]+?)_(\d+)$', low)
     if not m:

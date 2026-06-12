@@ -60,6 +60,26 @@ no como filtro de selección (sería lookahead). La accionable para seleccionar 
 cosecha histórica de salidas largas; corregido el lente, XS_IS es el primer predictor IS→OOS
 real del proyecto.
 
+### B2 — Features de sesión (hour/dow): RESULTADO NULO bajo listones oficiales
+
+**Hipótesis:** la estructura horaria del oro (Asia/Londres/NY) tiene edge que los osciladores
+no capturan. **Cambio exacto:** `hour`/`dow` como genes minables en L1 (con shift _sft;
+dow en convención MQL5 1=Lun..5=Vie), asignados a la familia CYCLE en L2, y traducción MQL5
+vía `TimeToStruct` (MQL5 no tiene TimeHour/TimeDayOfWeek — eran MQL4). Cadena completa
+validada: EA de prueba con `hour_sft<=8|dow_sft>=2` compila 0 errors (`experimentos/EAs/
+SESIONTEST.mq5`); tests del traductor 8/8.
+
+**Resultado:**
+- **H1 (constitución oficial): 0 PASS en los 8 silos** — la sesión no rescata a H1.
+- **H4 (escala ÷4): 0 reglas con hour/dow entre los PASS.** El silo CYCLE (único lugar donde
+  hour/dow pueden liderar una regla) dio 0 PASS en ambos TF. Los 10+2 PASS de MOMENTUM/TREND
+  H4 son (a) el dip-buy `roc_55<=-2.79` de siempre + variación de semilla y (b) conteo
+  inflado por la re-auditoría retroactiva de los MASTERs que dejó C1 (no comparable con A1).
+
+**Veredicto (1 línea):** bajo listones oficiales la hipótesis de sesión NO aporta finalistas
+en XAUUSD H1/H4; queda el ADN y la traducción listos por si se quiere sondear con listón
+FRONTERA u otra familia de salida.
+
 ### C1 — Estabilidad por semilla de los finalistas H4: el TEMA es estable, las reglas no
 
 **Cambio exacto:** re-minado virgen (MASTER borrado antes de cada corrida para evitar la

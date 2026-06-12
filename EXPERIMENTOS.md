@@ -14,4 +14,6 @@
 
 | C1 | ¿Los finalistas H4 sobreviven a la semilla? | Re-minado virgen ×2 semillas de TREND y MOMENTUM H4 | MOMENTUM: `roc_55<=-2.79` reaparece SIEMPRE (estable, pero solape 2×). TREND: el tema reaparece (5 PASS en 2 semillas), la regla literal nunca; 2 reglas honestas de solape en total | **El TEMA "comprar debilidad en tendencia H4" es estable y honesto → candidato a hipótesis dirigida; EAs compilados listos para Reality Check MT5** |
 
+| B2 | La estructura horaria del oro tiene edge propio | hour/dow como genes (L1+L2 familia CYCLE+traductor MQL5 vía TimeToStruct); ciclos H1 y H4 | H1: 0 PASS (8 silos). H4: **0 reglas con hour/dow** entre los PASS; CYCLE=0 en ambos TF. Cadena MQL5 validada (EA compila) | **NULO bajo listones oficiales — la sesión no aporta finalistas; infraestructura queda lista** |
+
 ## Detalle por experimento → BITACORA.md (entrada por experimento)

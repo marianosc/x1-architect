@@ -129,6 +129,13 @@ def layer1():
         for hor in [12, 24, 48, 72, 96]:
             new_f[f'Ret_{hor}'] = (pd.Series(c).shift(-hor) - c).values / c
 
+        # B2 (exp. nocturno): features de sesión — la estructura horaria del
+        # oro (Asia/Londres/NY) como gen minable. Numéricas, entran al shift
+        # _sft como todo el ADN. dow se guarda en convención MQL5 (1=Lun..5=Vie:
+        # pandas dayofweek+1), así el EA lee t.day_of_week sin mapeos.
+        new_f['hour'] = df_res.DateTime.dt.hour.values.astype(np.float64)
+        new_f['dow'] = (df_res.DateTime.dt.dayofweek.values + 1).astype(np.float64)
+
         df_features = pd.DataFrame(new_f).replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0).astype(np.float32)
         shift_cols = {f'{k}_sft': df_features[k].shift(1) for k in df_features.columns if 'Ret_' not in k}
         shift_cols['Close_sft'] = pd.Series(c).shift(1).astype(np.float32)
