@@ -30,7 +30,8 @@ def log(msg):
     sys.stdout.flush()
 
 def load_mining_params(sym):
-    p = {"cooldown": 24, "min_exit": 1, "max_exit": 200, "f_points": 0.3}
+    p = {"cooldown": 24, "min_exit": 1, "max_exit": 200, "f_points": 0.3,
+         "min_signals": 200}
     try:
         df_a = pd.read_csv(os.path.join(DATA_DIR, "assets.csv"))
         row = df_a[df_a['Symbol'].str.contains(sym.split('_')[0])].iloc[0]
@@ -38,6 +39,13 @@ def load_mining_params(sym):
         # v106: cooldown desde la Constitución para que minero y auditor midan igual
         p["cooldown"] = int(row.get('Min_Dist_Bars', 24))
     except: pass
+    # Overrides por experimento (marco nocturno R3): nunca editar assets.csv.
+    if os.environ.get("X1_COOLDOWN"):
+        p["cooldown"] = int(float(os.environ["X1_COOLDOWN"]))
+        log(f"OVERRIDE X1_COOLDOWN: {p['cooldown']}")
+    if os.environ.get("X1_L2_MIN_SIGNALS"):
+        p["min_signals"] = int(float(os.environ["X1_L2_MIN_SIGNALS"]))
+        log(f"OVERRIDE X1_L2_MIN_SIGNALS: {p['min_signals']}")
     return p
 
 def engine(data, rules, col_map, ret_indices, side, params):
@@ -56,7 +64,7 @@ def engine(data, rules, col_map, ret_indices, side, params):
             parsed = parse_rule(rule, col_map)
             mask_e = signal_mask(data, parsed)
             mask_e = apply_cooldown(mask_e, params["cooldown"])
-            if np.sum(mask_e) < 200: continue
+            if np.sum(mask_e) < params["min_signals"]: continue
 
             e_idx = np.where(mask_e)[0]
             cost_vec = (f_points / data[e_idx, col_map['Close_sft']]).astype(np.float64)

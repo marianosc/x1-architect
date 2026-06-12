@@ -201,6 +201,17 @@ def run_radar():
              # v106.1: primer índice de Zona 1 — desde aquí se juzga el
              # estancamiento y el profit (Zona 0 = contexto, no tribunal)
              "z1_start": int(np.argmax(df_f['Zone'].values == 1)) if (df_f['Zone'] == 1).any() else 0}
+
+    # Overrides de Constitución por variable de entorno (marco de experimentos
+    # nocturnos, R3): un cambio por corrida, sin editar assets.csv jamás.
+    for k, env in (("min_t", "X1_MIN_TRADES"), ("min_pf", "X1_MIN_PF"),
+                   ("Stag_Global", "X1_STAG_GLOBAL"), ("cooldown", "X1_COOLDOWN"),
+                   ("monkey_train_min", "X1_MONKEY_TRAIN_MIN"),
+                   ("monkey_test_min", "X1_MONKEY_TEST_MIN"),
+                   ("monkey_n", "X1_MONKEY_N")):
+        if os.environ.get(env):
+            G_CFG[k] = type(G_CFG[k])(float(os.environ[env]))
+            print(f"\033[93m[L3] OVERRIDE {env}: {k} = {G_CFG[k]}\033[0m")
     
     try:
         with open(DATA / "audit_config.json", 'r') as f: G_FUSES = json.load(f)
