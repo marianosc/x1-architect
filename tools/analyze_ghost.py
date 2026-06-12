@@ -18,31 +18,62 @@ from scipy import stats
 GHOST = sys.argv[1] if len(sys.argv) > 1 else r"C:\temp\X1_GHOST_XAUUSD_H1_LONG_MOMENTUM.parquet"
 N_TRIALS = 1_000_000  # pruebas de la granja (~1M por ciclo) para el DSR
 
+COOLDOWN = 25  # Constitucion H1; expo > cooldown => el motor APILA posiciones
+
 df = pd.read_parquet(GHOST)
 ok = df[(df["err"] == "") & df["pf_oos"].notna() & df["monkey_oos"].notna()].copy()
-print(f"# ANALISIS FANTASMA — {len(df):,} candidatos, {len(ok):,} con OOS medible\n")
+ok["overlap_oos"] = ok["expo_oos"] / COOLDOWN
+honest = ok[ok["expo_oos"] <= COOLDOWN].copy()  # sin solape: EA-implementable tal cual
+print(f"# ANALISIS FANTASMA — {len(df):,} candidatos, {len(ok):,} con OOS medible, "
+      f"{len(honest):,} SIN solape (expo<=cooldown)\n")
+
+# ================== A2.5: EL ARTEFACTO DE SOLAPAMIENTO ==================
+print("## A2.5 — ARTEFACTO: el monkey premia el apilamiento, no el timing\n")
+print("El motor imputa Ret_N en cada entrada con cooldown 25: si N>25 simula una")
+print("cartera PIRAMIDADA que el EA real (una posicion por vez) nunca ejecutara.")
+print("El mono (busyUntil) no puede apilar => pvalue inflado con el solape:\n")
+g = ok.groupby("Exit").agg(n=("monkey_oos", "size"),
+                           mk_oos_mediana=("monkey_oos", "median"),
+                           pct_pasa90=("monkey_oos", lambda s: 100 * np.mean(s >= 90)),
+                           expo_med=("expo_oos", "median"))
+print("| Exit | n | solape | mk_oos mediana | % pasa 90 |")
+print("|---|---|---|---|---|")
+for ex, row in g.sort_values("expo_med").iterrows():
+    print(f"| {ex} | {row['n']:.0f} | {row['expo_med']/COOLDOWN:.1f}x | "
+          f"{row['mk_oos_mediana']:.1f} | {row['pct_pasa90']:.1f}% |")
+rho_ov, p_ov = stats.spearmanr(ok["overlap_oos"], ok["monkey_oos"])
+print(f"\nSpearman solape vs monkey_oos: **{rho_ov:+.3f}** (p={p_ov:.1e}). "
+      f"En los cohortes SIN solape la tasa de paso es ~10-13% = azar (el resultado honesto).\n")
 
 # =========================== A3: CORRELACIONES ===========================
 IS_FEATURES = ["PF_L2", "pf_is", "r2_is", "xs_is", "monkey_is", "trades_is",
                "expo_is", "stag", "n_conds", "beta_is", "oer"]
 OOS_TARGETS = ["pf_oos", "monkey_oos", "profit_oos", "xs_oos"]
 
-print("## A3 — Spearman IS -> OOS (la pregunta: ¿que metrica IS predice OOS?)\n")
-print("| metrica IS | vs pf_oos | vs monkey_oos | vs profit_oos | vs xs_oos |")
-print("|---|---|---|---|---|")
-for f in IS_FEATURES:
-    if f not in ok.columns: continue
-    cells = []
-    for t in OOS_TARGETS:
-        sub = ok[[f, t]].dropna()
-        if len(sub) < 100:
-            cells.append("n/d"); continue
-        rho, p = stats.spearmanr(sub[f], sub[t])
-        flag = "**" if (abs(rho) >= 0.05 and p < 1e-4) else ""
-        cells.append(f"{flag}{rho:+.3f}{flag} (p={p:.1e})")
-    print(f"| {f} | " + " | ".join(cells) + " |")
+def spearman_table(pool, titulo, min_n=50):
+    print(f"### {titulo} (n={len(pool):,})\n")
+    print("| metrica IS | vs pf_oos | vs monkey_oos | vs profit_oos | vs xs_oos |")
+    print("|---|---|---|---|---|")
+    for f in IS_FEATURES:
+        if f not in pool.columns: continue
+        cells = []
+        for t in OOS_TARGETS:
+            sub = pool[[f, t]].dropna()
+            if len(sub) < min_n:
+                cells.append("n/d"); continue
+            rho, p = stats.spearmanr(sub[f], sub[t])
+            flag = "**" if (abs(rho) >= 0.05 and p < 1e-3) else ""
+            cells.append(f"{flag}{rho:+.3f}{flag} (p={p:.1e})")
+        print(f"| {f} | " + " | ".join(cells) + " |")
+    print()
 
-print("\n### Deciles (por cada feature IS: media de pf_oos y % que pasaria monkey_oos>=90)\n")
+
+print("## A3 — Spearman IS -> OOS (la pregunta: ¿que metrica IS predice OOS?)\n")
+spearman_table(ok, "Pool COMPLETO (contaminado por el gradiente de solape)")
+spearman_table(honest, "Subset HONESTO sin solape (expo<=25: lo que el EA puede ejecutar)")
+spearman_table(ok[ok["Exit"] == "Ret_96"], "Cohorte Ret_96 (solape ~constante 3.8x: timing a apalancamiento igual)")
+
+print("\n### Deciles sobre el pool completo (media de pf_oos y % que pasaria monkey_oos>=90)\n")
 for f in ["xs_is", "pf_is", "monkey_is", "r2_is"]:
     sub = ok[[f, "pf_oos", "monkey_oos"]].dropna()
     if len(sub) < 500: continue
@@ -60,18 +91,21 @@ for f in ["xs_is", "pf_is", "monkey_is", "r2_is"]:
 
 # =========================== A4: FRONTERA ===========================
 print("\n## A4 — Sondas de frontera (mapa del terreno, NO cosecha; etiqueta FRONTERA)\n")
-print("Gates fijos: trades_is>=300, stag<=5000, profit_z1z2>0, trades_oos>=2, monkey_is>=99\n")
-base_gates = (df["err"] == "") & (df["trades_is"] >= 300) & (df["stag"] <= 5000) & \
-             (df["profit_z1z2"] > 0) & (df["trades_oos"] >= 2) & (df["monkey_is"] >= 99)
-print(f"Candidatos que cruzan los gates fijos: {int(base_gates.sum())} de {len(df):,}\n")
-print("| monkey_oos \\ min_pf | 1.25 | 1.15 | 1.05 |")
-print("|---|---|---|---|")
-for mk in (90, 80, 70, 60, 50):
-    cells = []
-    for pf in (1.25, 1.15, 1.05):
-        n = int((base_gates & (df["pf_is"] >= pf) & (df["monkey_oos"] >= mk)).sum())
-        cells.append(str(n))
-    print(f"| >={mk} | " + " | ".join(cells) + " |")
+for pool, tag in ((ok, "pool completo (CONTAMINADO por solape)"),
+                  (honest, "subset honesto sin solape")):
+    base_gates = (pool["trades_is"] >= 300) & (pool["stag"] <= 5000) & \
+                 (pool["profit_z1z2"] > 0) & (pool["trades_oos"] >= 2) & (pool["monkey_is"] >= 99)
+    print(f"### {tag} — cruzan gates fijos (trades>=300, stag<=5000, profit>0, mk_is>=99): "
+          f"{int(base_gates.sum())} de {len(pool):,}\n")
+    print("| monkey_oos \\ min_pf | 1.25 | 1.15 | 1.05 |")
+    print("|---|---|---|---|")
+    for mk in (90, 80, 70, 60, 50):
+        cells = []
+        for pf in (1.25, 1.15, 1.05):
+            n = int((base_gates & (pool["pf_is"] >= pf) & (pool["monkey_oos"] >= mk)).sum())
+            cells.append(str(n))
+        print(f"| >={mk} | " + " | ".join(cells) + " |")
+    print()
 
 # =========================== B1: INSTITUCIONALES ===========================
 print("\n## B1 — Metricas institucionales (columnas fantasma, no gates)\n")

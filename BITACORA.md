@@ -4,6 +4,62 @@
 
 ## 2026-06-12 (noche) — PROGRAMA NOCTURNO en rama `experimentos-nocturnos` (entradas incrementales abajo)
 
+### A2+A3+A4+B1 — EL HALLAZGO DE LA NOCHE: el monkey premia apilamiento, no timing — y al corregirlo, XS_IS se vuelve EL predictor
+
+**A2 (modo fantasma):** `tools/ghost_audit.py` auditó 20.000 candidatos LONG MOMENTUM H1 SIN
+early-returns (todos los gates + momentos OOS + 8 bloques Z1), 26 s. Parquet en C:\temp.
+
+**EL ARTEFACTO (descubierto auditando la sonda A4):** el motor imputa `Ret_N` en cada entrada
+con cooldown 25: si N>25 simula una cartera PIRAMIDADA (Ret_96 = ~4 posiciones concurrentes)
+que el EA real (una posición por vez) **nunca va a ejecutar**. El mono usa `busyUntil` y no
+puede apilar → el p-value escala con el solape, no con el timing:
+
+| Exit | solape | mediana mk_oos | % pasa 90 |
+|---|---|---|---|
+| Ret_12 | 0.5x | 54.6 | **10,3% = azar** |
+| Ret_24 | 1.0x | 69.6 | 32,8% |
+| Ret_48 | 1.9x | 94.1 | 55,8% |
+| Ret_72 | 2.9x | 100 | 67,1% |
+| Ret_96 | 3.8x | 100 | **94,2% = apalancamiento** |
+| SINTETICA (expo~18) | 0.7x | 67.5 | 13,3% |
+
+Spearman solape↔mk_oos = +0.425. El 91% del pool elige Ret_96 como mejor salida (L2 ama la
+piramidación del bull). **La calibración del canario no lo vio porque Ret_24 < cooldown 25.**
+Esto también re-lee el ciclo 3 (0/212): los que llegaban al gate eran mezcla; el resultado
+"anti-edge" del pool completo estaba contaminado en ambas direcciones.
+
+**A3 (correlaciones IS→OOS):** en el pool completo las correlaciones están dominadas por el
+gradiente de apalancamiento (pf_is ANTI-predice mk_oos −0.26). Pero en el **subset honesto
+sin solape (expo≤25, n=389 — lo único EA-implementable tal cual)** los signos SE INVIERTEN:
+
+| metrica IS | vs pf_oos (honesto) |
+|---|---|
+| **xs_is** | **+0.359** (p=3e-13) — y +0.509 contra xs_oos |
+| beta_is | +0.359 |
+| PF_L2 / pf_is | +0.31 |
+| stag | −0.18 (menos estancamiento, mejor) |
+
+**El filtro que faltaba existe y es XS_IS (Tomillero)** — pero solo vale en el espacio sin
+solape. En la cohorte Ret_96 (apalancamiento constante) pf_is/xs_is vuelven a anti-predecir:
+ahí adentro solo hay overfitting.
+
+**A4 (frontera):** pool completo: 5 cruzan gates fijos, 4 "pasan" todo (espejismo apalancado).
+**Subset honesto: 0 de 389 cruzan siquiera los gates fijos** (trades_is≥300 + mk_is≥99 son
+inalcanzables sin apilar). → El embudo oficial estructuralmente EXCLUYE lo implementable y
+cosecha lo no-implementable. Decisión de diseño para NOTEBOOK: (a) salidas ≤ cooldown en L2,
+o (b) motor con `busyUntil` (semántica EA), o (c) EA piramidal; y recalibrar Min_Trades para
+el espacio honesto.
+
+**B1 (institucionales):** t-stat/PSR/DSR computadas (columnas fantasma). DSR con N=1M pruebas:
+solo 813/20.000 sobreviven DSR≥0.95 aun CON apalancamiento (SR0=0.20/trade es el listón de
+multiplicidad). PBO (CSCV, 8 bloques Z1) = **0.29** — overfitting moderado a nivel pool.
+Caveat honesto: t-stat/PSR/DSR acá están computadas SOBRE OOS → sirven como veredicto final,
+no como filtro de selección (sería lookahead). La accionable para seleccionar es XS_IS.
+
+**Veredicto (1 línea):** el bug semántico motor-apila/EA-no-apila invalida el grueso de la
+cosecha histórica de salidas largas; corregido el lente, XS_IS es el primer predictor IS→OOS
+real del proyecto.
+
 ### A1 — Ciclo H4 XAUUSD: LOS PRIMEROS 7 PASS OFICIALES DEL PROYECTO
 
 **Hipótesis:** H4 respira donde H1 se ahoga (4× menos velas → menos peaje relativo de fricción
@@ -33,6 +89,13 @@ INTACTOS:** PF 1.25, monkey 99/90 con fricción justa 1.0. Artefactos: `experime
 
 **Veredicto (1 línea):** H4 produce los primeros PASS oficiales; un único patrón "comprar la
 caída"; borderline en OOS → obligatorio C1 (semillas) y Reality Check MT5 antes de creer.
+
+**ENMIENDA post-A2 (artefacto de solape):** medidas las duraciones reales de los 5 finalistas
+contra cooldown 6: los 4 de MOMENTUM tienen solape **2.0-2.1x** (duración media ~12 velas H4)
+→ su monkey_OOS 90-91 es sospechoso de apalancamiento implícito, se degradan a FRONTERA*.
+**El de TREND (`adx_34>=27 & minus_di_8>=19.7`) es LIMPIO: solape 1.0x (duración media 6.2)**,
+PF 5.34, R2 0.97, mk_OOS 92.6 — el único finalista honesto de la noche. Sigue siendo 1 entre
+1.35M de pruebas (multiplicidad): prometedor, no validado.
 
 ## 2026-06-12 — Ciclo 3 (monkey con fricción justa): 0/212 pasan MONKEY_OOS → se abre fase de hipótesis
 
