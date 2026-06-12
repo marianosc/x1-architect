@@ -2,6 +2,67 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 — [NOTEBOOK] DIRECTIVAS v108: el cuello de botella es el MINERO — minero evolutivo + gramática formulaica
+
+**Diagnóstico (aprobado por Mariano):** el tribunal v107 quedó validado; lo que bloquea el
+descubrimiento de alpha es el GENERADOR de hipótesis. Tres debilidades del L2 actual:
+1. **Búsqueda uniforme-aleatoria**: 500k tiradas independientes sin aprendizaje entre
+   candidatos — eficiencia de búsqueda casi nula en un espacio astronómico.
+2. **Gramática pobre**: solo `indicador OP umbral/indicador`. No puede expresar conceptos
+   relacionales: "RSI subiendo" (delta), "ATR en su percentil 90 de 100 velas" (ts_rank),
+   "cruce de EMAs", "distancia al máximo de N velas". Nota: el único tema que llegó a
+   asomar (dip-buy en tendencia) es justamente un concepto RELACIONAL.
+3. **Fitness = PF en Z1 entero**: selecciona picos de suerte (maldición del ganador medida:
+   decil alto de mk_IS → peor OOS).
+
+**Estado del arte público relevante (revisado por notebook):** WorldQuant "101 Formulaic
+Alphas" (gramática de operadores temporales), gplearn/DEAP (programación genética),
+AlphaGen (RL-MLDM, generación de alphas formulaicos por RL), Genetic-Alpha, GeneTrader.
+Veredicto: NO importar codebases (perderíamos la calibración MT5); PORTAR los conceptos
+al motor X1, como se hizo con monkey/XS/DSR.
+
+### TAREA v108 PARA BLANCA (en orden, commit por bloque):
+
+**v108.1 — GRAMÁTICA FORMULAICA (regla de oro intacta: nada sin traducción MQL5):**
+Operadores nuevos sobre los genes existentes, cada uno con helper X1_* en el traductor:
+- `delta_K(x)` = x_hoy − x_hace_K velas (K ∈ {3,8,21})
+- `ts_rank_W(x)` = percentil de x en sus últimas W velas (W ∈ {50,100,250})
+- `dist_max_W` / `dist_min_W` = distancia % del Close al máximo/mínimo de W velas
+- `cross(a,b)` = a cruzó por encima de b en las últimas K velas
+- `slope_K(x)` = pendiente OLS de x en K velas (ya existe X1_LINREG para Close; generalizar)
+Implementación L1: columnas derivadas precalculadas (el Parquet crece — elegir subconjunto
+con criterio, ~30-50 columnas nuevas máx). Tests de paridad TA-Lib/NumPy↔MQL5 por operador.
+
+**v108.2 — MINERO EVOLUTIVO (reemplaza la tirada uniforme):**
+- Población por silo (~2.000), torneo, cruce de condiciones, mutación de umbral/período/
+  operador, ~30-50 generaciones, islas por familia con migración baja.
+- **FITNESS ANTI-MALDICIÓN (clave): mediana del PF neto en los 8 bloques de Z1** (los del
+  PBO/CSCV ya implementados) − penalización por complejidad (nº condiciones). PROHIBIDO
+  mirar Z2 en el fitness: Z2 sigue siendo del tribunal, no del minero.
+- Presupuesto comparable al actual (~500k evaluaciones/silo) para autopsias comparables.
+- DEAP permitido como dependencia si acelera; si no, GA propio en numba.
+
+**v108.3 — EXPERIMENTO DE VALIDACIÓN DEL MINERO:**
+Mismo tribunal v107, XAUUSD H1 y H4: ciclo con minero evolutivo vs baseline aleatorio
+(0 PASS). La pregunta NO es solo "¿pasa algo?" sino "¿el embudo se puebla mejor?"
+(candidatos que crucen gap, lleguen al monkey, distribución de mk_oos). Autopsia comparable.
+
+**GOBERNANZA DE DATOS (recordatorio):** los CSV nuevos que baje Mariano (ver abajo) pasan
+TODOS por el gate de calidad ANTES de cualquier uso. XAUUSD 2003-2015 y el tramo análogo
+de los activos nuevos quedan SELLADOS para minería (solo validación final ex-ante).
+
+**DATA ENCARGADA A MARIANO (Dukascopy, M1, UTC+2 FIJO sin DST, formato flat CSV idéntico
+al actual, sin filtro de sesión, destino Z:\...\38_42_X1_V_105 SISTEMA X1 PYTHON\data\):**
+1. XAUUSD — historia COMPLETA disponible (~2003→hoy) en un solo archivo consistente
+   (reemplaza al actual: un solo origen, sin costuras).
+2. XAGUSD (plata) — historia completa (el metal pedido).
+3. USA500.IDX/USD (S&P 500) — historia completa (el índice; más historia y liquidez que
+   el tech en Dukascopy).
+4. EURGBP — historia completa (la divisa SIN tendencia histórica: el par lateral clásico,
+   test perfecto para edges que no sean surfear deriva).
+5. EURUSD — re-descarga completa limpia (para desbloquear el pipeline y, de paso,
+   confirmar contra el CSV podrido dónde estaban las costuras).
+
 ## 2026-06-12 — FASE 3: M30 nulo limpio + EURUSD H4 "9.928 PASS" = DATOS PODRIDOS (descartado entero)
 
 **M30 XAUUSD** (escala ×2 desde H1: Stag 10000, Min_Trades 600, cooldown 50, señales 400):
