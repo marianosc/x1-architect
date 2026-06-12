@@ -2,6 +2,40 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 — FASE 2: RE-MAPEO CON EL LENTE CORREGIDO — la cosecha de la semana queda en CERO real
+
+**Verificación del fix (fantasma v107, 20k LONG MOMENTUM H1):** el artefacto desapareció —
+Spearman solape↔mk_oos colapsó de **+0.425 a +0.036**, y la tasa de paso OOS por salida quedó
+en 2-17% en todos los cohortes (antes: 94% en Ret_96). El instrumento ya mide timing.
+
+**Los tres mapas, todos 0 PASS (artefactos en experimentos/F2_*):**
+| Mapa | Candidatos | Nota |
+|---|---|---|
+| H1 oficial v107 | 977.087 | Frontera VACÍA incluso a mk_oos≥50 + PF 1.05 + XS: H1 es estéril |
+| H4 escalado v107 | 1.250.093 | Embudo más rico (miles cruzan el gap) pero **mk_IS ahora mata de verdad** (antes la palanca regalaba IS=100): 0 PASS |
+| H1C4 re-test B3 limpio | 971.487 | **El null de B3 ahora es real, no condicionado**: el contexto H4 no desbloquea H1 |
+
+**Re-auditoría dirigida de los 2 "honestos" de C1 bajo v107:**
+| Regla | trades v107 (viejo) | mk_is | mk_oos | Veredicto |
+|---|---|---|---|---|
+| `adx_34>=27 & minus_di_8>=19.7` | 111 (177) | 94.4 | **79.5** | FAIL |
+| `aroon_120>=-3.4 & plus_di_34<=17.8` | 160 (229) | 78.1 | **40.2** | FAIL |
+
+La "media de solape 1.0×" escondía la distribución: trades individuales con duración > cooldown
+apilaban igual. **Nada de lo cosechado esta semana sobrevive al motor honesto.** El Reality
+Check MT5 queda sin candidatos (los EAs H4TREND01/02 se conservan como referencia histórica).
+
+**Honestidad R4 sobre XS_IS:** bajo v107 su poder predictivo NO es robusto (+0.076 global,
++0.026 n.s. en el subset corto). El +0.36 de anoche era en gran parte gradiente de palanca
+entre cohortes. El umbral 0.55 en la frontera tampoco rescata nada (0 en todas las celdas).
+Lo que SÍ queda visible con el lente limpio: la **maldición del ganador** (decil 9 de
+monkey_is → el PEOR pf_oos: 1.652 vs 1.865 del decil 0) y que expo/beta/oer altos = surfear
+el régimen alcista, no habilidad.
+
+**Conclusión Fase 2:** con el instrumento ya confiable, la minería aleatoria sobre este ADN
+no produce NADA en XAUUSD H1 ni H4, ni con listones oficiales ni de frontera. La vía que
+queda es la fase de hipótesis dirigidas (y/o ADN nuevo), midiendo con este lente.
+
 ## 2026-06-12 — FASE 1 (opción B aprobada): POSICIÓN ÚNICA en el motor — v107
 
 **Cambio:** `x1_engine.simulate()` con `single_position=True` por DEFAULT.

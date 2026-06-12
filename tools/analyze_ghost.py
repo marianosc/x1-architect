@@ -91,21 +91,25 @@ for f in ["xs_is", "pf_is", "monkey_is", "r2_is"]:
 
 # =========================== A4: FRONTERA ===========================
 print("\n## A4 — Sondas de frontera (mapa del terreno, NO cosecha; etiqueta FRONTERA)\n")
+MIN_T_FRONTERA = int(sys.argv[2]) if len(sys.argv) > 2 else 300
 for pool, tag in ((ok, "pool completo (CONTAMINADO por solape)"),
                   (honest, "subset honesto sin solape")):
-    base_gates = (pool["trades_is"] >= 300) & (pool["stag"] <= 5000) & \
+    base_gates = (pool["trades_is"] >= MIN_T_FRONTERA) & (pool["stag"] <= 5000) & \
                  (pool["profit_z1z2"] > 0) & (pool["trades_oos"] >= 2) & (pool["monkey_is"] >= 99)
-    print(f"### {tag} — cruzan gates fijos (trades>=300, stag<=5000, profit>0, mk_is>=99): "
+    print(f"### {tag} — cruzan gates fijos (trades>={MIN_T_FRONTERA}, stag<=5000, profit>0, mk_is>=99): "
           f"{int(base_gates.sum())} de {len(pool):,}\n")
-    print("| monkey_oos \\ min_pf | 1.25 | 1.15 | 1.05 |")
-    print("|---|---|---|---|")
-    for mk in (90, 80, 70, 60, 50):
-        cells = []
-        for pf in (1.25, 1.15, 1.05):
-            n = int((base_gates & (pool["pf_is"] >= pf) & (pool["monkey_oos"] >= mk)).sum())
-            cells.append(str(n))
-        print(f"| >={mk} | " + " | ".join(cells) + " |")
-    print()
+    for xs_filter, xs_tag in ((None, "sin filtro XS"), (0.55, "con XS_IS>=0.55 (umbral candidato, Fase 2)")):
+        g = base_gates if xs_filter is None else (base_gates & (pool["xs_is"] >= xs_filter))
+        print(f"**{xs_tag}** (cruzan: {int(g.sum())})\n")
+        print("| monkey_oos \\ min_pf | 1.25 | 1.15 | 1.05 |")
+        print("|---|---|---|---|")
+        for mk in (90, 80, 70, 60, 50):
+            cells = []
+            for pf in (1.25, 1.15, 1.05):
+                n = int((g & (pool["pf_is"] >= pf) & (pool["monkey_oos"] >= mk)).sum())
+                cells.append(str(n))
+            print(f"| >={mk} | " + " | ".join(cells) + " |")
+        print()
 
 # =========================== B1: INSTITUCIONALES ===========================
 print("\n## B1 — Metricas institucionales (columnas fantasma, no gates)\n")
