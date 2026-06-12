@@ -20,8 +20,8 @@ OUT = r"C:\temp\X1_FULL_XAUUSD_H1C4.parquet"
 CTX = [f"{ind}_{p}_sft" for ind in ("ema", "adx", "linreg", "efficiency")
        for p in (21, 55, 120)]
 
-df1 = pd.read_parquet(H1)
-df4 = pd.read_parquet(H4)
+df1 = pd.read_parquet(H1).reset_index(drop=True)
+df4 = pd.read_parquet(H4).reset_index(drop=True)
 df1["DateTime"] = pd.to_datetime(df1["DateTime"])
 df4["DateTime"] = pd.to_datetime(df4["DateTime"])
 

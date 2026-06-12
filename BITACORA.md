@@ -60,6 +60,24 @@ no como filtro de selección (sería lookahead). La accionable para seleccionar 
 cosecha histórica de salidas largas; corregido el lente, XS_IS es el primer predictor IS→OOS
 real del proyecto.
 
+### B3 — ADN inter-timeframe (contexto H4 sobre H1): NULO bajo listones oficiales — pero condicionado al bug de solape
+
+**Hipótesis (prior alto de Mariano):** el contexto de tendencia H4 (ema/adx/linreg/efficiency
+×{21,55,120}) desbloquea a H1. **Cambio exacto:** `tools/build_h4_context.py` construye
+`X1_FULL_XAUUSD_H1C4.parquet` (301 cols) con merge_asof backward — la vela H4 usada está
+SIEMPRE cerrada al momento de la vela H1 (**verificación anti-lookahead: 0 violaciones**).
+Los 12 genes `*_h4x*_sft` entraron al pool TREND (132 genes, verificado). 8 silos con
+constitución H1 oficial.
+
+**Resultado: 0 PASS en los 8 silos.** LONG TREND (donde vive el contexto): 234.873 candidatos,
+56 llegaron a MK_OOS, 0 pasaron. El muro FAIL_GAP de H1 sigue intacto: el contexto H4 no
+cambia que el espacio honesto H1 no alcanza los gates (A4) y que el espacio apalancado es
+espejismo (A2.5).
+
+**Veredicto (1 línea):** nulo bajo el embudo actual — PERO la hipótesis merece re-test
+después del fix de solape: B3 se midió con un embudo que estructuralmente no puede cosechar
+H1 honesto, así que este nulo es del embudo, no necesariamente de la hipótesis.
+
 ### B2 — Features de sesión (hour/dow): RESULTADO NULO bajo listones oficiales
 
 **Hipótesis:** la estructura horaria del oro (Asia/Londres/NY) tiene edge que los osciladores
