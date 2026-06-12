@@ -79,6 +79,59 @@ def test_estrategia_con_edge_real_pasa():
     print(f"OK  edge inyectado detectado: p-value {res['pvalue']:.3f} >= 0.99")
 
 
+def test_friccion_baja_la_beta_de_los_monos():
+    """(a) Con friction_per_trade>0 la beta baja exactamente trades*friccion.
+
+    Mismo seed => mismas entradas Bernoulli => la unica diferencia entre los
+    dos universos de monos es el peaje: beta_0 - beta_f == monkey_trades * f.
+    """
+    ret_1 = RNG.normal(0, 0.002, 4000)
+    f = 0.0004  # ~1.0 pt sobre precio 2500 (peaje XAUUSD normalizado)
+    r0 = monkey_test(ret_1, 100, 24, 0.0, n_monkeys=N_MONKEYS_TEST, seed=99)
+    rf = monkey_test(ret_1, 100, 24, 0.0, n_monkeys=N_MONKEYS_TEST, seed=99,
+                     friction_per_trade=f)
+    esperado = rf['monkey_trades'] * f
+    assert np.isclose(r0['beta'] - rf['beta'], esperado, rtol=1e-9), \
+        f"beta_0-beta_f={r0['beta']-rf['beta']:.6f} != trades*f={esperado:.6f}"
+    print(f"OK  friccion de monos: beta {r0['beta']:+.5f} -> {rf['beta']:+.5f} "
+          f"(caida = {rf['monkey_trades']:.0f} trades x {f} exacta)")
+
+
+def test_estrategia_neta_vs_monos_con_friccion_es_justa():
+    """(b) Sin edge y con friccion en AMBOS lados, el p-value vuelve a ~uniforme.
+
+    Antes (monos brutos) una estrategia-mono que pagaba spread real quedaba
+    castigada con p-value bajo: el sesgo de la herramienta original.
+    """
+    ret_1 = RNG.normal(0, 0.002, 4000)  # sin deriva
+    exposure, n_trades, f = 24, 80, 0.0004
+    fwd = rolling_forward_returns(ret_1, exposure)
+    entries = np.sort(RNG.choice(len(ret_1) - exposure, n_trades, replace=False))
+    strat_neta = float(fwd[entries].sum()) - n_trades * f  # paga su peaje
+    res_justa = monkey_test(ret_1, n_trades, exposure, strat_neta,
+                            n_monkeys=N_MONKEYS_TEST, friction_per_trade=f)
+    res_sesgada = monkey_test(ret_1, n_trades, exposure, strat_neta,
+                              n_monkeys=N_MONKEYS_TEST, friction_per_trade=0.0)
+    assert 0.02 < res_justa['pvalue'] < 0.98, \
+        f"Pelea justa deberia dar p-value no extremo: {res_justa['pvalue']}"
+    assert res_sesgada['pvalue'] <= res_justa['pvalue'], \
+        "El modo sesgado (monos brutos) deberia castigar a la estrategia neta"
+    print(f"OK  pelea justa: p-value {res_justa['pvalue']:.3f} (~uniforme) | "
+          f"modo sesgado la castigaba: {res_sesgada['pvalue']:.3f}")
+
+
+def test_friccion_cero_reproduce_comportamiento_original():
+    """(c) Regresion: friction_per_trade=0 == llamada sin el parametro."""
+    ret_1 = RNG.normal(0.0003, 0.002, 4000)
+    a = monkey_test(ret_1, 90, 12, 0.05, n_monkeys=N_MONKEYS_TEST, seed=7)
+    b = monkey_test(ret_1, 90, 12, 0.05, n_monkeys=N_MONKEYS_TEST, seed=7,
+                    friction_per_trade=0.0)
+    for k in ('pvalue', 'beta', 'monkey_win_pct', 'monkey_trades', 'prob_entry'):
+        assert a[k] == b[k], f"Regresion rota en '{k}': {a[k]} != {b[k]}"
+    print(f"OK  regresion: friction_per_trade=0 identico al original "
+          f"(pvalue {a['pvalue']:.3f}, beta {a['beta']:+.5f})")
+
+
 def test_forward_returns_exactos():
     """fwd[i] debe ser la suma exacta de la ventana, incluso en el borde final."""
     ret = np.array([0.01, 0.02, 0.03, 0.04])

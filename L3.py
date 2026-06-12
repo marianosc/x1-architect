@@ -115,6 +115,7 @@ def audit_worker(s_row):
         monkey_is_pct, monkey_oos_pct = -1.0, -1.0  # -1 = no evaluado (fusible OFF)
 
         if fuses.get("monkey_test", True):
+            close_all = d_f[:, c_map['Close']]
             for z_mask, thresh_key, fail_label, attr in (
                     (z_is, 'monkey_train_min', "FAIL_MONKEY_IS", 'is'),
                     (z_oos, 'monkey_test_min', "FAIL_MONKEY_OOS", 'oos')):
@@ -124,10 +125,15 @@ def audit_worker(s_row):
                 pos = np.searchsorted(idx_e, entries_z)
                 expo_z = int(max(1, round(float(np.mean(durations[pos])))))
                 strat_total_z = float(r_all[z_mask].sum())
+                # v106.2: los monos pagan el MISMO peaje normalizado que la
+                # estrategia paga via simulate() (la estrategia llega NETA;
+                # sin esto los monos cobraban bruto = pelea injusta).
+                friction_z = float(cfg['f_points']) / float(np.mean(close_all[z_mask]))
                 res_mk = monkey_test(ret_1[z_mask], len(entries_z), expo_z,
                                      strat_total_z, side,
                                      n_monkeys=cfg.get('monkey_n', 5000),
-                                     seed=cfg.get('monkey_seed', 12345))
+                                     seed=cfg.get('monkey_seed', 12345),
+                                     friction_per_trade=friction_z)
                 pct = res_mk['pvalue'] * 100.0
                 if attr == 'is': monkey_is_pct = pct
                 else: monkey_oos_pct = pct

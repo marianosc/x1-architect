@@ -2,6 +2,44 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 — Ciclo 3 (monkey con fricción justa): 0/212 pasan MONKEY_OOS → se abre fase de hipótesis
+
+**Implementación del veredicto:** `monkey_test()` acepta `friction_per_trade` (retorno
+fraccional): cada entrada del mono paga `fwd[i] - friction`. La herramienta original de Marc
+compara la estrategia NETA contra monos BRUTOS — ese sesgo castigaba a las estrategias reales
+(debían superar al azar Y pagar un spread que los monos no pagaban). L3 pasa
+`f_points / mean(Close de la zona)`: el mismo peaje normalizado que la estrategia paga vía
+`simulate()`. Tests 13/13 en `test_x1_validators.py`, incluidos los 3 nuevos:
+(a) la beta de los monos cae exactamente `trades × fricción` (mismo seed → diferencia exacta);
+(b) estrategia sin edge pero neta vs monos CON fricción → p-value ~uniforme (0.098; el modo
+sesgado la castigaba a 0.041); (c) regresión: `friction_per_trade=0` reproduce el original.
+
+### EL NÚMERO: de 212 que llegaron a MONKEY_OOS, pasaron 0 (0,0%)
+
+| Silo | Candidatos | Cruzan gap | Llegan a MONKEY_OOS | Pasan |
+|---|---|---|---|---|
+| LONG MOMENTUM   | 270.669 | 137 | 81 | 0 |
+| LONG TREND      | 238.705 | 88  | 43 | 0 |
+| LONG VOLATILITY | 245.891 | 124 | 76 | 0 |
+| LONG CYCLE      | 288.079 | 26  | 12 | 0 |
+| **Total** | **1.050.995** | **375** | **212** | **0** |
+
+**Lectura estadística (la pregunta del veredicto era ~10% = azar):** bajo puro azar, un
+candidato sin edge pasa el listón OOS del 90% un ~10% de las veces → se esperaban ~21 pases
+en 212 intentos. **Cero pases tiene probabilidad ≈ 0,9²¹² ≈ 2×10⁻¹⁰: no es azar, es ANTI-edge.**
+Los finalistas son la élite IS (sobrevivieron PF≥1.25 y monkey IS 99%), y en OOS rinden PEOR
+que entradas aleatorias con su misma cadencia y dirección: la firma clásica del overfitting
+del minero — lo aprendido en Z1 no solo no generaliza, sino que estorba en Z2.
+
+**Conclusión operativa (criterio del veredicto): la minería random NO tiene edge → se abre
+FASE DE HIPÓTESIS** (familias/ADN/targets dirigidos en vez de 500k reglas aleatorias por silo).
+La corrección de fricción era necesaria para la integridad del test, pero no cambió el
+resultado: con pelea sesgada (ciclo 2) 0/166; con pelea justa (ciclo 3) 0/212. El embudo,
+el monkey y la telemetría quedan validados y listos para medir hipótesis dirigidas.
+
+Tiempos: ciclo 327,6 s. L MOM 45,6 s (re-JIT del kernel por la firma nueva, cacheado);
+resto de L3 LONG 23,7-29,1 s. AUDITs ciclo 3 en Z: (ciclo 2 respaldado `.ciclo2.bak`).
+
 ## 2026-06-11 — Ciclo 2 (Zona 0 = contexto): el embudo fluye, el monkey ejecuta, verdugo final = MONKEY_OOS
 
 **Implementación del veredicto (opción b):** `L3.py` ahora juzga estancamiento (FAIL_GAP)

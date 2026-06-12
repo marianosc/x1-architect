@@ -58,8 +58,12 @@ def rolling_forward_returns(ret_1, exposure):
 
 
 @njit(cache=True)
-def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed):
-    """Bucle de monos fiel al motor de Marc: Bernoulli vela a vela + busyUntil."""
+def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed, friction):
+    """Bucle de monos fiel al motor de Marc: Bernoulli vela a vela + busyUntil.
+
+    `friction` (retorno fraccional por trade) se descuenta en CADA entrada del
+    mono, igual que simulate() se lo descuenta a la estrategia.
+    """
     np.random.seed(seed)
     n = fwd.shape[0]
     finals = np.zeros(n_monkeys)
@@ -71,7 +75,7 @@ def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed):
         for i in range(n):
             if i > busy_until:
                 if np.random.random() <= prob_entry:
-                    equity += fwd[i]
+                    equity += fwd[i] - friction
                     busy_until = i + exposure - 1
                     n_tr += 1
         finals[m] = equity
@@ -80,7 +84,8 @@ def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed):
 
 
 def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
-                n_monkeys=N_MONKEYS_DEFAULT, seed=12345, correct_cadence=True):
+                n_monkeys=N_MONKEYS_DEFAULT, seed=12345, correct_cadence=True,
+                friction_per_trade=0.0):
     """Ejecuta el Monkey Test sobre una zona del histórico.
 
     Args:
@@ -99,6 +104,15 @@ def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
                     p = trades / (velas - trades*(exposure-1)) para que la
                     cadencia esperada coincida con la real (test más justo
                     y más exigente).
+      friction_per_trade: peaje por trade de los monos, en retorno fraccional
+                    (p.ej. f_points / precio_medio_de_la_zona). La herramienta
+                    original de Marc compara la estrategia NETA de fricción
+                    contra monos BRUTOS: ese sesgo castiga a las estrategias
+                    reales (deben superar al azar Y pagar el spread que los
+                    monos no pagan). Con friction_per_trade > 0 cada entrada
+                    del mono paga el mismo peaje normalizado que la estrategia
+                    paga vía simulate(), y la pelea es justa. 0.0 = comporta-
+                    miento original (sesgado), conservado para regresión.
 
     Returns dict:
       pvalue          : fracción de monos que la estrategia supera [0,1]
@@ -124,7 +138,8 @@ def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
         prob_entry = min(1.0, n_trades / n)
     fwd = rolling_forward_returns(ret, exposure)
 
-    finals, counts = _monkey_core(fwd, prob_entry, exposure, int(n_monkeys), int(seed))
+    finals, counts = _monkey_core(fwd, prob_entry, exposure, int(n_monkeys), int(seed),
+                                  float(friction_per_trade))
 
     return {
         'pvalue': float(np.mean(strat_total > finals)),
