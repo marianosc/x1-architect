@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bitácora visual — X1-Architect</title>
+<style>
+  :root { --verde: #1D9E75; --rojo: #E24B4A; --ambar: #BA7517; --gris: #5F5E5A; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: #f7f6f3; color: #2c2c2a; line-height: 1.55; }
+  header { background: #2c2c2a; color: #f1efe8; padding: 18px 32px; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #b4b2a9; }
+  nav { background: #444441; padding: 8px 32px; position: sticky; top: 0; z-index: 5; }
+  nav a { color: #f1efe8; text-decoration: none; font-size: 13px; margin-right: 18px; }
+  nav a:hover { color: #9FE1CB; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 32px 60px; }
+  h2 { font-size: 17px; border-bottom: 2px solid #d3d1c7; padding-bottom: 6px; margin-top: 38px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; background: #fff; }
+  th, td { border: 1px solid #e2e0d8; padding: 7px 10px; text-align: left; }
+  th { background: #ece9e0; font-weight: 600; }
+  .ok { color: var(--verde); font-weight: 600; }
+  .mal { color: var(--rojo); font-weight: 600; }
+  .gris-txt { color: var(--gris); }
+  .galeria { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
+  .card { background: #fff; border: 1px solid #e2e0d8; border-radius: 8px; overflow: hidden; }
+  .card img { width: 100%; display: block; cursor: zoom-in; }
+  .card .pie { padding: 10px 14px; font-size: 12.5px; }
+  .card .pie b { font-size: 13px; }
+  .num { display: inline-block; background: #2c2c2a; color: #fff; border-radius: 4px; padding: 1px 7px; font-size: 11px; margin-right: 6px; }
+  ul { font-size: 14px; }
+  .nota { background: #faeeda; border-left: 4px solid var(--ambar); padding: 10px 14px; font-size: 13px; margin: 14px 0; }
+  .exito { background: #e1f5ee; border-left: 4px solid var(--verde); padding: 10px 14px; font-size: 13px; margin: 14px 0; }
+  footer { text-align: center; font-size: 12px; color: #888; padding: 20px; }
+  @media (max-width: 800px) { .galeria { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Bitácora visual — X1-Architect (granja XAUUSD)</h1>
+  <p>Uso interno · blanca (ejecución) ↔ notebook (diseño) · actualizada 2026-06-12 · crónica completa en BITACORA.md</p>
+</header>
+<nav>
+  <a href="#estado">Estado</a>
+  <a href="#resultados">Resultados</a>
+  <a href="#graficos">Gráficos</a>
+  <a href="#incidencias">Incidencias</a>
+  <a href="#decisiones">Decisiones</a>
+  <a href="#pendientes">Pendientes</a>
+</nav>
+<main>
+
+<h2 id="estado">Estado actual (2026-06-12)</h2>
+<div class="exito">
+<b>Pipeline completo validado de punta a punta en blanca:</b> calibración Python↔MT5 CERRADA
+(match de precios <b>96,7%</b>, divergencia residual de equity <b>−0,009 pts%</b>, gráficos 02-03)
+y dos ciclos del commander con autopsia completa. El embudo está ordenado y el monkey activo y
+letal: <b>166/166 finalistas muertos en el listón OOS 90%</b> (gráfico 05). Cosecha 0 = dato
+válido (ley pasos.txt).
+</div>
+<p class="gris-txt">Fase actual: leer el ciclo 2 entre todos. La conversación pendiente ya no es
+infraestructura sino minería: si el MONKEY_OOS al 90% sigue matando al 100% de los finalistas
+tras N ciclos, lo que falta es calidad de hipótesis (familias/ADN/targets), no más candidatos.</p>
+
+<h2 id="resultados">Tabla de resultados</h2>
+<table>
+<tr><th>Hito</th><th>Qué se midió</th><th>Resultado</th><th>Veredicto</th></tr>
+<tr><td>Deploy en blanca (fases 0-7)</td><td>venv 3.12 + numba/TA-Lib, 26 tests, Parquet v106 (287 cols), compilación de EAs</td><td><span class="ok">26/26 tests · CANARIO01/02: 0 errors, 0 warnings</span></td><td class="ok">OK — blanca operativa</td></tr>
+<tr><td>Calibración: sincronía por precio</td><td>fill del EA vs Close[i] del motor, 107 pares contiguos</td><td><span class="ok">media +0,189 pts (medio-spread), 100% dentro de ±0,5 pt</span></td><td class="ok">El offset +1 NO era bug: Close[i] = open[i+1]</td></tr>
+<tr><td>Calibración: fricción y equity</td><td>coste real Darwinex vs assets.csv; equity motor vs tester</td><td>coste real 0,97 pts/trade vs 0,3 asumido (3,2×) → fricción a 1,0. Residual: <span class="ok">−0,009 pts%</span> (objetivo &lt;0,5)</td><td class="ok">CERRADA — luz verde al commander</td></tr>
+<tr><td>Ciclo 1 commander (XAUUSD H1)</td><td>1.050.495 candidatos, 8 silos, monkey 5.000 armado</td><td><span class="mal">0 cosechados — FAIL_GAP mata al 99,9998% (gráfico 04); el monkey ejecutó 0 veces</span></td><td class="gris-txt">Muro detectado → veredicto notebook: opción (b)</td></tr>
+<tr><td>Ciclo 2 (Zona 0 = contexto)</td><td>1.050.122 candidatos con z1_start en L3; test 3/3</td><td>375 cruzan el gap (vs 2) · 209 llegan al monkey · <span class="mal">166/166 mueren en MONKEY_OOS 90%</span> · monkey ≈ 20-80 ms/llamada</td><td class="ok">Embudo sano; cosecha 0 = dato válido</td></tr>
+</table>
+
+<h2 id="graficos">Galería de gráficos</h2>
+<div class="galeria">
+  <div class="card"><a href="graficos/01_esquema_zonas_z1start.png" target="_blank"><img src="graficos/01_esquema_zonas_z1start.png" alt="Esquema zonas"></a>
+    <div class="pie"><span class="num">01</span><b>Las tres zonas del Parquet y el veredicto del ciclo 1.</b> Zona 0 (2015-2018) = contexto "Hist": alimenta indicadores pero no ejecuta a nadie. Desde z1_start se juzgan estancamiento y profit (v106.1). El minero selecciona en Z1; el tribunal final es Z2.</div></div>
+  <div class="card"><a href="graficos/02_calibracion_fill_vs_close.png" target="_blank"><img src="graficos/02_calibracion_fill_vs_close.png" alt="Fill vs Close"></a>
+    <div class="pie"><span class="num">02</span><b>★ La prueba decisiva de la sincronía (por PRECIO, no por etiqueta).</b> Propuse "corregir" el shift del EA; la notebook lo rechazó y pidió esta prueba: el fill del EA = Close[i] del motor +0,189 pts de media = exactamente el medio-spread del ask. El offset +1 de etiqueta es la firma de la sincronía CORRECTA.</div></div>
+  <div class="card"><a href="graficos/03_calibracion_equity_motor_vs_mt5.png" target="_blank"><img src="graficos/03_calibracion_equity_motor_vs_mt5.png" alt="Equity motor vs MT5"></a>
+    <div class="pie"><span class="num">03</span><b>Calibración cerrada: dos curvas, una encima de la otra.</b> Motor (fricción 1,0) vs Strategy Tester Darwinex sobre los 107 pares sincronizados del canario: divergencia final −0,009 pts%. Con esto la simulación Python ES el tester, y la granja puede confiar en sus números.</div></div>
+  <div class="card"><a href="graficos/04_muro_failgap_ciclo1.png" target="_blank"><img src="graficos/04_muro_failgap_ciclo1.png" alt="Muro FAIL_GAP"></a>
+    <div class="pie"><span class="num">04</span><b>El muro del ciclo 1.</b> Con fricción realista (1,0), las equity pasan decenas de miles de velas sin máximos nuevos contra un umbral de 5.000 — y el gap se medía desde 2015, incluyendo un régimen en el que nadie fue seleccionado. El 99,9998% de 1,05M candidatos murió aquí y el resto del embudo quedó ciego.</div></div>
+  <div class="card"><a href="graficos/05_embudo_ciclo1_vs_ciclo2.png" target="_blank"><img src="graficos/05_embudo_ciclo1_vs_ciclo2.png" alt="Embudo ciclos"></a>
+    <div class="pie"><span class="num">05</span><b>★ El embudo respira tras la opción (b).</b> 375 candidatos cruzan el gap (vs 2), 209 llegan al monkey y el verdugo final aparece por primera vez: FAIL_MONKEY_OOS mata 166/166 en el listón del 90%. Cosecha 0 pero el sistema funciona: nada de lo minado tiene edge OOS que supere al azar — todavía.</div></div>
+  <div class="card"><a href="graficos/06_tiempos_capas_monkey.png" target="_blank"><img src="graficos/06_tiempos_capas_monkey.png" alt="Tiempos por capa"></a>
+    <div class="pie"><span class="num">06</span><b>El monkey NO es cuello de botella (medido, no supuesto).</b> Ciclo completo ~6 min en el Ryzen. El +32 s de L MOM en el ciclo 2 es compilación JIT de primera vez (cacheada); después, cientos de monkey-calls de 5.000 monos cuestan 20-80 ms cada una. L3 es ~100% simulate() masivo: ~7.500 sims/s.</div></div>
+</div>
+
+<h2 id="incidencias">Incidencias y errores (cronológico)</h2>
+<ul>
+  <li><b>2026-06-11</b> — Python del sistema era 3.14 (sin wheels de numba/TA-Lib). venv recreado con <code>py -3.12</code>; TA-Lib 0.6.8 y numba 0.65.1 instalaron directo de pip (ya no hace falta la wheel manual del checklist).</li>
+  <li><b>2026-06-11</b> — La regla de ejemplo del checklist usaba <code>rsi_14</code>, que NO existe en la ADN v106 (períodos 5,8,13,21,34,55,89,144,200,24,48,120) → <code>rsi_13</code>. Además era contradictoria (<code>ema_55 &lt;= Close</code> junto a sobreventa): 0 entradas en motor Y en MT5. Desigualdad correcta: <code>ema_55_sft &gt;= Close_sft</code>.</li>
+  <li><b>2026-06-11</b> — pandas 3.0 eliminó <code>Series.view</code> → <code>astype('int64')</code> en el comparador.</li>
+  <li><b>2026-06-11</b> — <code>metaeditor64.exe /compile</code> devuelve exit code 1 incluso compilando perfecto: la verdad está en la línea <code>Result: 0 errors</code> del log, no en el exit code.</li>
+  <li><b>2026-06-11</b> — Cooldown del EA generado (24) ≠ motor (25): off-by-one silencioso. <code>generate_ea.py</code> ahora toma el default de <code>Min_Dist_Bars</code> de assets.csv.</li>
+  <li><b>2026-06-11</b> — L2 moría EN SILENCIO al redirigir stdout a archivo: Windows cp1252 no codifica el emoji 🚀 y el <code>except</code> global convertía el <code>UnicodeEncodeError</code> en "0 alphas" sin error visible. Todo el primer intento de ciclo minó cero. Fix: <code>PYTHONUTF8=1</code> en el runner.</li>
+  <li><b>2026-06-11</b> — L3 no escribía el AUDIT json cuando la cosecha era 0 → la autopsia se perdía justo en el caso más informativo (mortalidad total). Parcheado: la telemetría se escribe SIEMPRE.</li>
+  <li><b>2026-06-11</b> — El fusible <code>monkey_test</code> estaba en <code>false</code> en <code>audit_config.json</code>: el monkey jamás habría corrido. Activado antes del ciclo 1.</li>
+  <li><b>2026-06-11</b> — El Parquet de la COSECHA de Z: era el viejo de 213 cols sin High/Low (XS quedaba NaN). Regenerado v106 (287 cols) y subido con backup <code>.213cols.bak</code>.</li>
+  <li><b>A vigilar</b> — Jitter de umbral RSI(13) entre TA-Lib (Parquet) e iRSI (MT5): cerca del umbral disparan con 1 barra de diferencia (~8% de los trades del canario, offset +2). No bloquea; es slippage de implementación documentado.</li>
+</ul>
+
+<h2 id="decisiones">Decisiones metodológicas</h2>
+<ul>
+  <li><b>La sincronía se prueba por PRECIO, no por etiqueta de vela</b>: el motor entra a Close[i], que en MT5 es el open de la vela i+1. Mi propuesta de "corregir" el shift fue RECHAZADA por la notebook y refutada con datos (gráfico 02). Regla de oro: ante una divergencia de timing, comparar fills contra Close[i] antes de tocar código.</li>
+  <li><b>Fricción XAUUSD = 1,0 pt</b> (Slippage 0,1 / Spread 0,6 / Comm 0,3), calibrada contra el coste real Darwinex medido (0,97). Sin esto el auditor sobreestima el PF neto y la granja cosecha espejismos.</li>
+  <li><b>Zona 0 = contexto, no tribunal (opción b del veredicto del ciclo 1)</b>: estancamiento y profit se juzgan desde z1_start. Nadie muere por no ganar en un régimen en el que no fue seleccionado. Test de regresión en <code>tests/test_L3_zona0.py</code>.</li>
+  <li><b>Mortalidad altísima es el resultado esperado y correcto</b> (ley pasos.txt). Cosecha 0 es un dato, no un fallo: el monkey al 99/90 está haciendo su trabajo.</li>
+  <li><b>Telemetría siempre</b>: cada ciclo escribe su AUDIT json aunque no coseche nada — la autopsia de los muertos es lo que dirige el siguiente movimiento.</li>
+  <li><b>Canal blanca ↔ notebook = BITACORA.md</b> en el repo (lo más nuevo arriba). Las decisiones de diseño llegan de la notebook; la evidencia empírica la produce blanca. Un ciclo por vez: el primer ciclo se lee entre todos antes de dejar la granja en bucle.</li>
+</ul>
+
+<h2 id="pendientes">Pendientes</h2>
+<ul>
+  <li><b>EN CURSO</b>: lectura del ciclo 2 entre todos (notebook + Mariano). Decisión grande: si MONKEY_OOS 90% sigue al 100% letal, atacar calidad de hipótesis (familias/ADN/targets), no cantidad.</li>
+  <li>SHORT casi sin candidatos ya en L2 (284-4.587 vs ~250k LONG): ¿minar SHORT con otro criterio o aceptar que el oro alcista no da SHORT netos?</li>
+  <li>Dejar la granja en bucle (commander.py) — solo cuando se apruebe tras la lectura del ciclo 2.</li>
+  <li>Backtest del canario con salida SINTETICA_REVERSE (CANARIO02) para calibrar también la rotura de regla bar-a-bar en MT5.</li>
+  <li>Jitter de umbral RSI TA-Lib vs iRSI: cuantificar si escala con más indicadores (CMO/MFI) o queda en ~8%.</li>
+  <li>EURUSD y USATECH: repetir deploy de datos (L1) y calibración de fricción por símbolo antes de minarlos.</li>
+</ul>
+
+<div class="nota"><b>Cómo actualizar esta bitácora:</b> los PNG numerados viven en <code>docs/graficos/</code>
+y se regeneran con <code>python tools/graficar_bitacora.py</code> (lee el Parquet, la calibración
+del canario y los AUDIT reales — no hay números dibujados a mano). Hito nuevo = generar el PNG
+en ese script, agregar la card acá y la entrada cronológica en <code>BITACORA.md</code>.</div>
+
+</main>
+<footer>X1-Architect · bitácora de uso interno · se abre con doble click desde docs/bitacora.html</footer>
+</body>
+</html>
