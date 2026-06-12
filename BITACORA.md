@@ -2,6 +2,39 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-12 — FASE 1 (opción B aprobada): POSICIÓN ÚNICA en el motor — v107
+
+**Cambio:** `x1_engine.simulate()` con `single_position=True` por DEFAULT.
+- **Fijas Ret_N:** espaciado ≥ max(cooldown, **N+1**) — la vela de cierre consume la
+  oportunidad porque el EA hace `return` tras `PositionClose`. El +1 está verificado contra
+  MT5: la calibración del canario (Ret_24, cooldown 25 → espaciado 25) coincidió 96,7% con
+  el tester, y este fix la deja intacta.
+- **Sintética:** caminata busy-until en numba (`_synthetic_single_core`) con duración
+  dinámica: una entrada aceptada bloquea hasta su cierre real + cooldown desde la entrada.
+- **L2 mina con la misma semántica** (espaciado por salida + sintética busy-walk): el minero
+  ya solo selecciona lo que el EA puede ejecutar.
+- `single_position=False` conserva la semántica vieja (regresión/comparaciones históricas).
+- **Tests 36/36** (12 motor incl. 4 nuevos: espaciado fijas, busy sintética, regresión modo
+  viejo, simetría estrategia-mono p=0.080 no extremo; 13 validators; 8 traductor; 3 zona0).
+
+**PROPUESTA Min_Trades (pendiente de aprobación de Mariano):** con posición única el máximo
+de trades es ≈ velas/espaciado, así que un Min_Trades global castiga a las salidas largas.
+Propongo **Min_Trades dinámico por candidato = max(30, 25% × velas_Z1 / espaciado)**, donde
+espaciado = max(cooldown, N+1) (fijas) o duración_media+1 (sintética). El 25% de ocupación
+está calibrado para reproducir el 300 oficial de H1-Ret_24 (0.25×29.766/25 = 298 ≈ 300):
+
+| Salida | H1 (Z1=29.766) | H4 (Z1=7.441) | M30 (Z1≈59.5k) |
+|---|---|---|---|
+| Ret_12 | 573 | 143 | 1.145 |
+| Ret_24 | **298 (≈300 actual)** | 74 (≈75 usado anoche) | 595 |
+| Ret_48 | 152 | 38 | 304 |
+| Ret_96 | 77 | 30 (floor) | 153 |
+| Sintética (dur media d) | 0.25×Z1/(d+1) | ídem | ídem |
+
+Hasta esa aprobación, los ciclos de Fase 2-3 corren con los Min_Trades actuales (300 H1 /
+75 H4 escalado) — la asimetría contra salidas largas queda documentada y el modo fantasma
+captura todo igual.
+
 ## 2026-06-12 (noche) — PROGRAMA NOCTURNO en rama `experimentos-nocturnos` (entradas incrementales abajo)
 
 ### A2+A3+A4+B1 — EL HALLAZGO DE LA NOCHE: el monkey premia apilamiento, no timing — y al corregirlo, XS_IS se vuelve EL predictor

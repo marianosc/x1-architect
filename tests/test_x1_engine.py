@@ -197,8 +197,11 @@ def test_demostracion_cooldown_desigual():
     """
     data, col_map, ret_idx = build_market()
     rule = "rsi_14_sft >= 30"  # señal densa
-    sim_l2 = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=24)
-    sim_l3 = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=0)
+    # single_position=False: la demo documenta la divergencia HISTORICA L2/L3
+    sim_l2 = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=24,
+                      single_position=False)
+    sim_l3 = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=0,
+                      single_position=False)
     assert sim_l3['n_trades'] > sim_l2['n_trades'], "Se esperaba más trades sin cooldown"
     print("OK  COOLDOWN DESIGUAL DEMOSTRADO:")
     print(f"      trades con cooldown 24 (como minaba L2) : {sim_l2['n_trades']}")
@@ -210,8 +213,9 @@ def test_salida_fija_y_friccion_como_l3():
     data, col_map, ret_idx = build_market()
     rule = "rsi_14_sft >= 55|ema_55_sft <= Close_sft"
     f_points = 0.3
+    # single_position=False: réplica del L3 histórico (sin espaciado de salida)
     sim = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'SHORT',
-                   cooldown=0, friction_points=f_points)
+                   cooldown=0, friction_points=f_points, single_position=False)
 
     # Réplica literal de L3 (sin cooldown, fricción por precio de entrada)
     mask = fast_signal_generator(data, rule, col_map)
@@ -224,6 +228,80 @@ def test_salida_fija_y_friccion_como_l3():
     assert np.allclose(sim['vector'], r_all, atol=1e-9), "Vector neto != L3"
     assert sim['n_trades'] == len(idx_e)
     print(f"OK  salida fija + fricción == L3 ({len(idx_e)} trades, {f_points} pts)")
+
+
+def test_single_position_espaciado_fijas():
+    """v107: con posición única, Ret_N exige espaciado >= max(cooldown, N+1).
+
+    La vela de cierre consume la oportunidad (el EA hace `return` tras
+    PositionClose). Verificado contra MT5 en la calibración del canario:
+    Ret_24 + cooldown 25 => espaciado 25, idéntico al tester.
+    """
+    data, col_map, ret_idx = build_market()
+    rule = "rsi_14_sft >= 20"  # señal muy densa
+    for cd, bars, esperado in ((5, 12, 13), (25, 24, 25), (0, 24, 25), (30, 12, 30)):
+        sim = simulate(data, col_map, ret_idx, rule, f'Ret_{bars}', 'LONG', cooldown=cd)
+        e = np.where(sim['mask'])[0]
+        assert len(e) > 10, "señal densa debería producir trades"
+        assert np.diff(e).min() >= esperado, \
+            f"cd={cd} N={bars}: espaciado {np.diff(e).min()} < {esperado}"
+    print("OK  posición única en fijas: espaciado >= max(cooldown, N+1) (4 casos)")
+
+
+def test_single_position_busy_sintetica():
+    """v107: la sintética de posición única no re-entra con posición abierta,
+    y cada trade aceptado replica la caminata del minero (mismo profit)."""
+    data, col_map, ret_idx = build_market()
+    rule = "rsi_14_sft >= 45|ema_55_sft <= Close_sft"
+    cd = 5
+    sim = simulate(data, col_map, ret_idx, rule, SYNTHETIC_EXIT, 'LONG', cooldown=cd)
+    e = np.where(sim['mask'])[0]
+    durs = sim['durations']
+    assert len(e) > 10
+    for k in range(len(e) - 1):
+        assert e[k + 1] > e[k] + durs[k], \
+            f"re-entrada con posición abierta: {e[k]}+{durs[k]} vs {e[k+1]}"
+        assert e[k + 1] - e[k] >= cd, "cooldown violado"
+    # los profits de las entradas aceptadas == caminata clásica sobre esas entradas
+    close = data[:, col_map['Close']].astype(np.float64)
+    ret_1 = np.zeros(len(close)); ret_1[:-1] = (close[1:] - close[:-1]) / (close[:-1] + 1e-9)
+    ref, _ = synthetic_exit(data, e, parse_rule(rule, col_map), ret_1, 1.0)
+    assert np.allclose(sim['vector'][e], ref, atol=1e-10)
+    print(f"OK  posición única en sintética: busy-walk sin re-entradas ({len(e)} trades)")
+
+
+def test_modo_viejo_regresion():
+    """single_position=False reproduce EXACTO la semántica histórica."""
+    data, col_map, ret_idx = build_market()
+    rule = "rsi_14_sft >= 40"
+    sim = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=10,
+                   single_position=False)
+    # réplica manual del comportamiento viejo
+    mask = apply_cooldown(signal_mask(data, rule, col_map), 10)
+    e = np.where(mask)[0]
+    esperado = np.zeros(data.shape[0])
+    esperado[e] = data[e, ret_idx['Ret_24']]
+    assert np.array_equal(sim['mask'], mask)
+    assert np.allclose(sim['vector'], esperado, atol=1e-12)
+    print(f"OK  regresión modo viejo (single_position=False): {len(e)} trades idénticos")
+
+
+def test_simetria_estrategia_mono():
+    """v107: con posición única, estrategia y mono tienen la MISMA semántica de
+    cartera — una estrategia sin edge ya no puede 'ganarle' al mono apilando."""
+    from modules.x1_validators import monkey_test
+    data, col_map, ret_idx = build_market()
+    rule = "rsi_14_sft >= 35"  # densa, sin información (rsi es uniforme random)
+    sim = simulate(data, col_map, ret_idx, rule, 'Ret_24', 'LONG', cooldown=5)
+    e = np.where(sim['mask'])[0]
+    close = data[:, col_map['Close']].astype(np.float64)
+    ret_1 = np.zeros(len(close)); ret_1[:-1] = (close[1:] - close[:-1]) / (close[:-1] + 1e-9)
+    res = monkey_test(ret_1, len(e), 24, float(sim['vector'].sum()),
+                      n_monkeys=500, seed=11)
+    assert 0.01 < res['pvalue'] < 0.99, \
+        f"estrategia-mono con posición única dio p-value extremo: {res['pvalue']}"
+    print(f"OK  simetría estrategia-mono: p-value {res['pvalue']:.3f} (no extremo, "
+          f"{len(e)} trades sin solape)")
 
 
 def test_metricas_basicas():

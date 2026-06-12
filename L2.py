@@ -11,7 +11,8 @@ from tqdm import tqdm
 from pathlib import Path
 from numba import njit
 
-from modules.x1_engine import parse_rule, signal_mask, apply_cooldown, synthetic_exit
+from modules.x1_engine import (parse_rule, signal_mask, apply_cooldown,
+                               synthetic_exit_single)
 
 @njit(cache=True)
 def numba_calc_pf_dynamic(returns, cost_vector):
@@ -62,23 +63,28 @@ def engine(data, rules, col_map, ret_indices, side, params):
     for rule in rules:
         try:
             parsed = parse_rule(rule, col_map)
-            mask_e = signal_mask(data, parsed)
-            mask_e = apply_cooldown(mask_e, params["cooldown"])
-            if np.sum(mask_e) < params["min_signals"]: continue
-
-            e_idx = np.where(mask_e)[0]
-            cost_vec = (f_points / data[e_idx, col_map['Close_sft']]).astype(np.float64)
+            mask_raw = signal_mask(data, parsed)
             best_pf, best_exit = 0.0, ""
 
-            # 1. Velas Fijas
+            # v107 (opcion B): POSICION UNICA tambien en el minado, para que
+            # L2 seleccione exactamente lo que el EA puede ejecutar.
+            # 1. Velas Fijas: espaciado >= max(cooldown, N+1) por salida
             for h_name, h_rets in exit_options:
-                pf = numba_calc_pf_dynamic(h_rets[mask_e].astype(np.float64), cost_vec)
+                h_bars = int(h_name.split('_')[1])
+                m_h = apply_cooldown(mask_raw, max(params["cooldown"], h_bars + 1))
+                if np.sum(m_h) < params["min_signals"]: continue
+                e_idx = np.where(m_h)[0]
+                cost_vec = (f_points / data[e_idx, col_map['Close_sft']]).astype(np.float64)
+                pf = numba_calc_pf_dynamic(h_rets[m_h].astype(np.float64), cost_vec)
                 if pf > best_pf: best_pf, best_exit = pf, h_name
 
-            # 2. Sintética (rotura de regla bar-a-bar, Motor Único)
-            profits_syn, _ = synthetic_exit(data, e_idx, parsed, ret_1_v, side_mult)
-            pf_syn = numba_calc_pf_dynamic(profits_syn, cost_vec)
-            if pf_syn > best_pf: best_pf, best_exit = pf_syn, "SINTETICA_REVERSE"
+            # 2. Sintética: caminata busy-until con duración dinámica
+            entries_s, profits_syn, _ = synthetic_exit_single(
+                data, mask_raw, parsed, ret_1_v, side_mult, params["cooldown"])
+            if len(entries_s) >= params["min_signals"]:
+                cost_vec = (f_points / data[entries_s, col_map['Close_sft']]).astype(np.float64)
+                pf_syn = numba_calc_pf_dynamic(profits_syn, cost_vec)
+                if pf_syn > best_pf: best_pf, best_exit = pf_syn, "SINTETICA_REVERSE"
 
             if best_pf > 1.05:
                 res.append([rule, side, best_exit, round(best_pf, 3)])
