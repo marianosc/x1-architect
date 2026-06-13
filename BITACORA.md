@@ -31,6 +31,33 @@ v108.1 (gramática formulaica) o de que NOTEBOOK confirme prioridad. Los activos
 (EURUSD/GBPUSD/USDJPY/EURGBP limpios) se ingieren con el mismo L1 cuando se decidan sus
 Z1_Start/Z2_Start en assets.csv.
 
+## 2026-06-13 — [NOTEBOOK] Min_Trades dinámico (L3) + decisión: MODO DIAGNÓSTICO (waterfall de atrición)
+
+**Min_Trades dinámico (`L3.py`):** el `Min_Trades=300` fijo de assets.csv estaba calibrado a mano
+para la Z1 vieja (% del total). Con la zonificación por fecha (Z1=2015-2021) ese 300 quedó
+descalibrado, y además castigaba salidas largas (Ret_96 no puede tener tantos trades como Ret_12).
+Nuevo gate (reemplaza `if len(r_is) < cfg['min_t']`):
+```
+spacing   = max(cooldown, duración media de trades del candidato)   # ≈ N en salidas fijas
+min_t_req = max(30, 0.25 × velas_IS / spacing)                      # ≥25% de oportunidades, piso 30
+```
+Se autoajusta a zona/TF/horizonte, sin números mágicos. Si un experimento setea `X1_MIN_TRADES` se
+respeta el valor fijo. L1/L3 compilan; da ~437 para XAUUSD H1 Ret_24 con la Z1 nueva (~42k velas) vs
+el ~18% de densidad que dejaba pasar el 300 viejo. **Blanca lo ejercita en la próxima corrida de L3.**
+
+**Decisión metodológica (pregunta de Mariano): adoptar un MODO DIAGNÓSTICO / waterfall de atrición.**
+En vez de que cada gate (gap, PF, monkey IS/OOS…) DESCARTE al primer fallo, en modo diagnóstico los
+gates **ETIQUETAN**: cada candidato sigue y registra qué gates (no) pasa + sus métricas OOS (PF_OOS,
+monkey_oos_pct, DSR…). Una sola corrida da el embudo completo Y la DISTRIBUCIÓN por etapa → responde
+la pregunta clave: **¿NO hay edge, o el pipeline mata edge real?** Encuadre honesto: NO crea alpha;
+los ciclos 1-3 ya dieron anti-edge (élite IS peor que azar OOS, p≈2e-10) PERO sobre el minero/data
+VIEJOS. Por eso el waterfall se **estrena con el minero v108 + data nueva**, como protocolo estándar
+de medición, no como re-corrida del setup viejo. **SL/TP/gestión de trade sigue para el final**:
+meterlos ahora enmascararía si el PF viene de la señal o del trade management; primero edge en la
+señal cruda. Riesgo: con gates laxos pasan muchos por azar (multiplicidad = enemigo central, DSR/PBO)
+→ no enamorarse de falsos positivos. Implementación: extender la telemetría AUDIT (ya guarda conteos
+de muerte por gate) a etiquetado por candidato. PENDIENTE de construir cuando el minero v108 corra.
+
 ## 2026-06-13 — [NOTEBOOK] L1 ingiere la data Dukascopy + zonificación por fecha (sello pre-2015)
 
 **Qué cambió (`L1.py` + `data/assets.csv`):**

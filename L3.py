@@ -87,7 +87,17 @@ def audit_worker(s_row):
         r_oos = r_all[zones['oos']][r_all[zones['oos']] != 0]
 
         if len(r_oos) < 2: return None, "FAIL_OOS_EMPTY" # Muerte súbita inactivos
-        if len(r_is) < cfg['min_t']: return None, "FAIL_TRADES"
+        # Min_Trades DINÁMICO (v108): umbral por DENSIDAD ajustado al espaciado real
+        # del candidato (duración media de trades ≈ N en salidas fijas; lo que dure en
+        # sintéticas), para no castigar salidas largas con un mínimo absoluto. Exige
+        # operar ≥25% de las oportunidades de la zona IS; piso 30 (significancia).
+        # Si un experimento fuerza X1_MIN_TRADES, se respeta ese valor fijo.
+        if cfg['min_t_fixed']:
+            min_t_req = int(cfg['min_t'])
+        else:
+            spacing = max(cfg['cooldown'], float(np.mean(durations)) if len(durations) else cfg['cooldown'])
+            min_t_req = max(30, int(0.25 * cfg['velas_is'] / spacing))
+        if len(r_is) < min_t_req: return None, "FAIL_TRADES"
         
         pf_is = np.sum(r_is[r_is > 0]) / (abs(np.sum(r_is[r_is < 0])) + 1e-9)
         if pf_is < cfg['min_pf']: return None, "FAIL_PF_NET"
@@ -200,7 +210,11 @@ def run_radar():
              "monkey_n": 5000,
              # v106.1: primer índice de Zona 1 — desde aquí se juzga el
              # estancamiento y el profit (Zona 0 = contexto, no tribunal)
-             "z1_start": int(np.argmax(df_f['Zone'].values == 1)) if (df_f['Zone'] == 1).any() else 0}
+             "z1_start": int(np.argmax(df_f['Zone'].values == 1)) if (df_f['Zone'] == 1).any() else 0,
+             # v108: Min_Trades DINÁMICO — tamaño real de la zona IS (train) y flag
+             # de override fijo (si un experimento setea X1_MIN_TRADES se respeta).
+             "velas_is": int((df_f['Zone'] == 1).sum()),
+             "min_t_fixed": "X1_MIN_TRADES" in os.environ}
 
     # Overrides de Constitución por variable de entorno (marco de experimentos
     # nocturnos, R3): un cambio por corrida, sin editar assets.csv jamás.
