@@ -2,6 +2,36 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [NOTEBOOK] Gate de calidad de datos + set multi-activo Dukascopy validado
+
+**Herramienta nueva:** `tools/check_data_quality.py` — gate PASS/WARN/FAIL para data M1 antes de
+minar. Chequea estructura/columnas, monotonía y duplicados de tiempo, sanidad OHLC, cobertura por
+año, DST (hora de apertura tras finde, verano vs invierno) y **costuras intra-sesión** distinguidas
+de los gaps legítimos de fin de semana (la firma del defecto que pudrió al EURUSD viejo: 81 saltos
+>1%/año por CSV concatenado). Umbrales: costuras >10/año WARN, >40/año FAIL; volumen como INFO (no
+afecta veredicto). Uso: `python tools/check_data_quality.py [archivos...]` o glob en `data/`.
+
+**Data nueva de Mariano (Dukascopy M1, EST+7 = UTC+2 FIJO sin DST, 2003→2026):** 7 activos bajados
+y pasados por el gate:
+- **XAUUSD → PASS** (7,85M filas, OHLC perfecto, peor año 8 costuras; apertura hora 1 = la sesión
+  del oro abre 1h más tarde que forex, sin DST). La casa de calibración con historia completa 2003+.
+- **EURUSD → PASS** (re-descarga limpia: 4 costuras totales vs los 81/año del podrido de Darwinex).
+- **USDJPY → PASS.**
+- **EURGBP → WARN** (31 costuras en 2008 = colapso real de la libra; termina 09-jun, 3 días corto).
+- **GBPUSD / GBPJPY / EURJPY → WARN**, todos por costuras que al inspeccionar son EVENTOS REALES:
+  Brexit (2016-06-24 02:17, idéntico en los 3 pares), flash crash de la libra (2016-10-07), crisis
+  2009. Ninguno es corrupción.
+
+**Veredicto:** set multi-activo COMPLETO y validado, todos UTC+2 fijo (confirma EST+7 sin DST).
+**Flag de volumen:** Dukascopy lo entrega en escala propia (~1e8 forex, ~2e4 oro) → genes con
+volumen (MFI/force) NO comparables con el tick del broker; calibrar o usar volumen solo relativo.
+Para minar (diversidad > cantidad por multiplicidad/DSR): **XAUUSD + EURUSD + GBPUSD + USDJPY +
+EURGBP**; EURJPY/GBPJPY quedan archivados (correlacionados).
+
+**Para blanca:** el gate ya está en el repo; pasá toda data nueva por él antes de minar. Pendiente de
+diseño (notebook + Mariano): ingestión de estos CSV en L1 (nombres `2026.6.13<PAR>_M1_*`, formato
+`DateTime,Bid,Ask,Volume,Open,High,Low,Close`) + zonificación con el sello pre-2015.
+
 ## 2026-06-12 — [NOTEBOOK] DIRECTIVAS v108: el cuello de botella es el MINERO — minero evolutivo + gramática formulaica
 
 **Diagnóstico (aprobado por Mariano):** el tribunal v107 quedó validado; lo que bloquea el
