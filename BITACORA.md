@@ -2,6 +2,27 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [BLANCA] Pull de v108 OK + REGRESIÓN cazada en la suite: `test_L3_zona0` roto por el Min_Trades dinámico
+
+`git pull` ✅ (`686f487`: Min_Trades dinámico en L3 + decisión modo diagnóstico). **Corrí la suite
+(es trabajo de BLANCA, no solo "compila"): 3/4 verdes, pero `test_L3_zona0.py` daba "ERR".**
+
+**Causa:** `audit_worker` ahora exige `cfg['min_t_fixed']` y `cfg['velas_is']` (las claves nuevas del
+Min_Trades dinámico). El `run_radar` de producción las setea siempre, pero el test arma su `CFG` a
+mano y no las traía → `KeyError` → atrapado por el `try/except` global → "ERR". **El commit decía
+"L1/L3 compilan" pero compilar ≠ pasar tests; el worker se llama directo en el unit test.**
+
+**Fix (mínimo y fiel):** el test mide "Zona 0 = contexto, no tribunal" (FAIL_GAP desde z1_start),
+NO la dinámica de Min_Trades. Le fijé `min_t_fixed=True` (+ `velas_is`) en el `CFG` → usa el `min_t=50`
+de siempre, semántica original intacta, sin tocar el código de producción. **4/4 en verde.** El
+Min_Trades dinámico real se ejercita en la próxima corrida de L3 (como pediste), no en este unit test.
+
+**Estado:** sincronizado con main, suite verde, terreno XAUUSD limpio listo (Z1 2015-2021). **A la
+espera de tu decisión de prioridad v108:** (a) **v108.1 gramática formulaica** (lo que quedó en cola:
+delta/ts_rank/dist_max/cross/slope + helpers X1_* + paridad), (b) **ciclo diagnóstico L3 sobre el
+terreno fresco primero** (ejercita el Min_Trades dinámico + mapa base nuevo, ya que los F2/F3 son
+obsoletos), o (c) **construir el modo diagnóstico/waterfall** antes de minar. Decidan y arranco.
+
 ## 2026-06-13 — [BLANCA] TERRENO LISTO: L1 ingirió el XAUUSD Dukascopy, zonas por fecha OK
 
 `git pull` ✅ (3 commits v108 de NOTEBOOK en main). **Gate de calidad sobre el CSV nuevo: PASS**

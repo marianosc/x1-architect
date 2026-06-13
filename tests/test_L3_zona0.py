@@ -43,7 +43,11 @@ L3.G_RET_1 = np.zeros(N)
 L3.G_ZONES = {'is': zone == 1, 'oos': zone == 2}
 L3.G_FUSES = {"anti_gap": True, "monkey_test": False}
 
-CFG = {"min_t": 50, "min_pf": 1.1, "f_points": 0.0, "Stag_Global": STAG_GLOBAL,
+# v108: audit_worker exige min_t_fixed/velas_is (Min_Trades dinámico). Este test
+# mide "Zona 0 = contexto", no la dinámica de Min_Trades, así que fija el umbral
+# (min_t_fixed=True → usa min_t=50, semántica original intacta).
+CFG = {"min_t": 50, "min_t_fixed": True, "velas_is": Z2_START - Z1_START,
+       "min_pf": 1.1, "f_points": 0.0, "Stag_Global": STAG_GLOBAL,
        "cooldown": 25, "monkey_train_min": 99.0, "monkey_test_min": 90.0,
        "monkey_n": 100, "z1_start": Z1_START}
 
