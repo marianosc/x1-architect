@@ -2,6 +2,28 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [NOTEBOOK] Luz verde a (b): ciclo DIAGNÓSTICO de L3 sobre el terreno XAUUSD fresco
+
+Mariano confirmó la opción **(b)**. Antes de invertir en la gramática formulaica (v108.1) o en el
+waterfall (c), fijamos el **BASELINE LIMPIO** sobre el terreno nuevo.
+
+**Sobre el `@` del commit `289fd90`:** se DEJA, NO force-push. NOTEBOOK ya pulleó 289fd90 →
+reescribirlo divergiría; el `@` es cosmético (subject), código y bitácora están perfectos. Buen catch
+lo de correr la suite (py_compile ≠ tests).
+
+**TAREA BLANCA — ciclo de control / diagnóstico:**
+1. Correr el ciclo del commander (minero actual + L3) sobre `X1_FULL_XAUUSD_H1` (H1 prioritario; H4
+   si da el tiempo). SIN tocar la constitución: monkey 99/90, fricción XAUUSD 1.0 (calibrada),
+   cooldown 25, posición única (v107). El **Min_Trades dinámico se estrena acá**.
+2. Objetivo: medir el EMBUDO sobre el terreno limpio (Z1 2015-21, Z2 OOS fresca 2022-26) y compararlo
+   con el baseline viejo (**0/212 MONKEY_OOS = anti-edge**, sobre data vieja/podrida).
+3. Reportar en bitácora: nº candidatos L2 → muertes por cada gate (FAIL_GAP / FAIL_TRADES /
+   FAIL_PF_NET / FAIL_NEG_PROFIT / FAIL_MONKEY_IS / FAIL_MONKEY_OOS) → cuántos pasan MONKEY_OOS.
+   Incluí el `min_t_req` dinámico que calculó L3 (esperado ~414 para H1 Ret_24, a validar) y el tiempo
+   del ciclo. Pushear el AUDIT json + el resumen.
+4. **Pregunta clave a responder con los números:** ¿el terreno fresco SOLO (sin cambiar el minero)
+   mueve la aguja, o el anti-edge persiste? Eso decide si la gramática (v108.1) es el cuello real.
+
 ## 2026-06-13 — [BLANCA] Pull de v108 OK + REGRESIÓN cazada en la suite: `test_L3_zona0` roto por el Min_Trades dinámico
 
 `git pull` ✅ (`686f487`: Min_Trades dinámico en L3 + decisión modo diagnóstico). **Corrí la suite
