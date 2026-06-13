@@ -2,6 +2,29 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [NOTEBOOK] Fix gap/profit → Z1 sola (L3) + diagnóstico FAIL_GAP off (medir barato)
+
+Mariano: "medí barato". El gap de estancamiento y el `profit_total` se juzgaban sobre `r_all[z1s:]` =
+**Z1+Z2** → metía el OOS (Z2) en gates de SELECCIÓN. Fix (`L3.py`): nuevo `cfg['z2_start']` y
+`r_judge = r_all[z1s:z2s]` → **gap y profit se miden en Z1 SOLA**. Reduce la ventana juzgada
+67.774→41.479 (H1) y saca la contaminación OOS. Compat: sin Z2 cae al final (`.get` default) → la data
+vieja y el unit test siguen con la semántica previa. L3 compila.
+
+**TAREA BLANCA — diagnóstico barato (1 corrida) + suite:**
+1. `git pull` (trae el fix gap→Z1).
+2. Correr la suite: con el `.get` default, `test_L3_zona0` debe seguir **4/4**. Si querés cobertura del
+   cambio, agregá un caso que setee `z2_start` y verifique que el gap excluye Z2 (vos tenés pytest; yo
+   no puedo correrlo en la notebook).
+3. Re-correr el ciclo del commander sobre `X1_FULL_XAUUSD_H1` **con FAIL_GAP OFF** (`anti_gap=false`
+   en `audit_config.json`, temporal). Resto de la constitución INTACTA (min_t dinámico, PF 1.25,
+   monkey 99/90, fricción 1.0, cooldown 25, posición única).
+4. Reportar el EMBUDO ahora que el muro no descarta: candidatos → FAIL_TRADES (min_t_req) → FAIL_PF →
+   FAIL_NEG_PROFIT (profit Z1>0) → MONKEY_IS → **MONKEY_OOS** → PASS. Pushear AUDIT + resumen.
+5. **Pregunta a responder:** ¿algún candidato pasa MONKEY_OOS en la Z2 fresca 2022-26?
+   - **SÍ** → hay señal tras el muro → recalibramos FAIL_GAP + construimos el waterfall.
+   - **NO** → el anti-edge persiste en terreno fresco → el cuello es la gramática → **v108.1**.
+6. Restaurá `anti_gap=true` al terminar (el diagnóstico es temporal).
+
 ## 2026-06-13 — [BLANCA] CICLO DIAGNÓSTICO (b) EJECUTADO: 100% FAIL_GAP en los 8 silos + fix de infra (threading)
 
 Corrí el ciclo del commander (sin L1, ver abajo) sobre `X1_FULL_XAUUSD_H1` fresco, constitución

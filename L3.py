@@ -66,7 +66,10 @@ def audit_worker(s_row):
         # ganar en un régimen (2015-2018) en el que nadie fue seleccionado.
         # Las señales/indicadores siguen calculándose sobre toda la historia.
         z1s = int(cfg.get('z1_start', 0))
-        r_judge = r_all[z1s:]
+        z2s = int(cfg.get('z2_start', len(r_all)))
+        # v108: el gap (estancamiento) y el profit se juzgan en Z1 SOLA (zona de selección);
+        # antes r_all[z1s:] = Z1+Z2 metía el OOS (Z2) en gates de selección.
+        r_judge = r_all[z1s:z2s]
         eq_global = np.cumsum(r_judge)
         peaks = np.maximum.accumulate(eq_global)
         peak_hits = np.where(np.diff(peaks, prepend=-1e-9) > 0)[0]
@@ -211,6 +214,9 @@ def run_radar():
              # v106.1: primer índice de Zona 1 — desde aquí se juzga el
              # estancamiento y el profit (Zona 0 = contexto, no tribunal)
              "z1_start": int(np.argmax(df_f['Zone'].values == 1)) if (df_f['Zone'] == 1).any() else 0,
+             # v108: fin de Z1 = inicio de Z2. El gap y el profit (gates de SELECCIÓN) se
+             # miden en Z1 sola, sin contaminar con el OOS. Sin Z2 -> al final (compat).
+             "z2_start": int(np.argmax(df_f['Zone'].values == 2)) if (df_f['Zone'] == 2).any() else len(df_f),
              # v108: Min_Trades DINÁMICO — tamaño real de la zona IS (train) y flag
              # de override fijo (si un experimento setea X1_MIN_TRADES se respeta).
              "velas_is": int((df_f['Zone'] == 1).sum()),
