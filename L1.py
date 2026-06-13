@@ -19,15 +19,24 @@ if "Z:" in current_dir or "Google Drive" in current_dir:
 else:
     GLOBAL_CLOUD_BASE = os.path.join(current_dir, "COSECHA")
 
+KNOWN_SYMBOLS = ["USATECHIDXUSD", "USATECH", "XAUUSD", "XAGUSD", "EURUSD", "GBPUSD",
+                 "USDJPY", "EURJPY", "GBPJPY", "EURGBP", "US500", "USTEC"]
+
 def get_symbol_from_path(path):
+    """Detecta el simbolo por catalogo (robusto ante prefijos de fecha tipo
+    '2026.6.13EURUSD_...'). Cae a un regex que EXIGE iniciar en letras para no
+    confundir la fecha numerica con el simbolo (el regex viejo devolvia '2026')."""
     try:
         base = os.path.basename(path).upper()
-        match = re.search(r'([A-Z0-9]{3,15})', base)
+        for s in sorted(KNOWN_SYMBOLS, key=len, reverse=True):
+            if s in base:
+                return s
+        match = re.search(r'([A-Z]{3,}[A-Z0-9]{0,12})', base)
         return match.group(1) if match else "UNKNOWN"
     except: return "UNKNOWN"
 
 def load_zoning_config(symbol):
-    cfg = {"ph": 25, "pt": 50, "po": 25}
+    cfg = {"ph": 25, "pt": 50, "po": 25, "z1_start": None, "z2_start": None}
     try:
         path = DATA_DIR / "assets.csv"
         if path.exists():
@@ -38,6 +47,10 @@ def load_zoning_config(symbol):
                 if 'Pct_Hist' in df.columns: cfg["ph"] = int(r['Pct_Hist'])
                 if 'Pct_Train' in df.columns: cfg["pt"] = int(r['Pct_Train'])
                 if 'Pct_OOS' in df.columns: cfg["po"] = int(r['Pct_OOS'])
+                # Zonificacion por FECHA (preferente sobre %): sella pre-z1_start a Z0.
+                for k, col in (("z1_start", "Z1_Start"), ("z2_start", "Z2_Start")):
+                    if col in df.columns and pd.notna(r[col]) and str(r[col]).strip():
+                        cfg[k] = pd.Timestamp(str(r[col]).strip())
     except Exception: pass
     return cfg
 
@@ -108,7 +121,10 @@ def layer1():
         
         d_cols = [c for c in df.columns if any(x in c.lower() for x in ['date', 'gmt', 'time'])]
         dt_s = df[d_cols[0]].astype(str) + " " + df[d_cols[1]].astype(str) if len(d_cols) >= 2 else df[d_cols[0]].astype(str)
-        df['DateTime'] = pd.to_datetime(dt_s.str.replace('.', '-', regex=False), dayfirst=True, errors='coerce')
+        # Formato Dukascopy nuevo (YYYYMMDD HH:MM:SS.mmm); si no cuaja, formato viejo europeo con puntos.
+        df['DateTime'] = pd.to_datetime(dt_s, format='%Y%m%d %H:%M:%S.%f', errors='coerce')
+        if df['DateTime'].isna().mean() > 0.5:
+            df['DateTime'] = pd.to_datetime(dt_s.str.replace('.', '-', regex=False), dayfirst=True, errors='coerce')
         
         for c_name in ['Open', 'High', 'Low', 'Close', 'Volume']:
             if c_name in df.columns: 
@@ -146,10 +162,17 @@ def layer1():
         df_fin.set_index('DateTime', drop=False, inplace=True)
         
         df_fin['Zone'] = 0
-        t_len = len(df_fin)
-        cut1, cut2 = int(t_len * z_cfg['ph'] / 100), int(t_len * (z_cfg['ph'] + z_cfg['pt']) / 100)
-        df_fin.iloc[cut1:cut2, df_fin.columns.get_loc('Zone')] = 1
-        df_fin.iloc[cut2:, df_fin.columns.get_loc('Zone')] = 2
+        if z_cfg['z1_start'] is not None and z_cfg['z2_start'] is not None:
+            # Corte por FECHA: Z0 = contexto sellado (pre-z1_start), Z1 = train, Z2 = OOS.
+            dt_idx = df_fin['DateTime']
+            df_fin.loc[dt_idx >= z_cfg['z1_start'], 'Zone'] = 1
+            df_fin.loc[dt_idx >= z_cfg['z2_start'], 'Zone'] = 2
+        else:
+            # Compatibilidad con data sin fechas de zona: corte por porcentaje de filas.
+            t_len = len(df_fin)
+            cut1, cut2 = int(t_len * z_cfg['ph'] / 100), int(t_len * (z_cfg['ph'] + z_cfg['pt']) / 100)
+            df_fin.iloc[cut1:cut2, df_fin.columns.get_loc('Zone')] = 1
+            df_fin.iloc[cut2:, df_fin.columns.get_loc('Zone')] = 2
         
         out_name = f"X1_FULL_{sym.upper()}_{tf_label.upper()}.parquet"
         local_target = os.path.join(LOCAL_TEMP, out_name)

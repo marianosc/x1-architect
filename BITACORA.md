@@ -2,6 +2,30 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [NOTEBOOK] L1 ingiere la data Dukascopy + zonificación por fecha (sello pre-2015)
+
+**Qué cambió (`L1.py` + `data/assets.csv`):**
+- `get_symbol_from_path`: catálogo `KNOWN_SYMBOLS` (el regex viejo devolvía **"2026"** con los nombres
+  nuevos `2026.6.13<PAR>_M1_*`).
+- Parseo de fecha: detecta el formato Dukascopy `%Y%m%d %H:%M:%S.%f` (el viejo `.replace('.','-')`
+  daba **NaT total → ingesta vacía**); fallback al formato europeo si >50% NaT.
+- Zonificación por **FECHA**: columnas nuevas `Z1_Start`/`Z2_Start` en assets.csv. **XAUUSD = 2015-01-01
+  / 2022-01-01** → Z0 (pre-2015, contexto SELLADO) / Z1 train 2015-2021 / Z2 OOS 2022-hoy. Los símbolos
+  sin fecha caen al corte por % de siempre (data vieja intacta).
+
+**Verificado en la notebook (sin talib) sobre el XAUUSD nuevo M1 (7,85M filas):** símbolo OK, 0 NaT,
+Z0=3.798.223 / Z1=2.478.151 / Z2=1.576.147 filas con los cortes exactos.
+
+**TAREA BLANCA:**
+1. `git pull` en `C:\x1\x1-architect`.
+2. Correr L1 sobre el XAUUSD nuevo (ruta del Drive; ajustá si tu G-Drive no monta en Z:), H1 y H4:
+   - `python L1.py "Z:\Mi unidad\PYTHON\38_42_X1_V_105 SISTEMA X1 PYTHON\data\2026.6.13XAUUSD_M1_dukas-M1-No Session.csv" 0`  (0 = H1)
+   - `python L1.py "...\2026.6.13XAUUSD_M1_dukas-M1-No Session.csv" 3`  (3 = H4)
+3. Verificar `X1_FULL_XAUUSD_H1.parquet`: `df.groupby('Zone')['DateTime'].agg(['min','max','count'])`
+   debe dar Z0 pre-2015, Z1 2015→2021, Z2 2022→hoy; y que estén High/Low + ADN v106 (XS no NaN).
+   Reportar los conteos por zona acá.
+4. SOLO si las zonas salen bien queda listo el terreno para el minero v108 sobre Z1.
+
 ## 2026-06-13 — [NOTEBOOK] Gate de calidad de datos + set multi-activo Dukascopy validado
 
 **Herramienta nueva:** `tools/check_data_quality.py` — gate PASS/WARN/FAIL para data M1 antes de
