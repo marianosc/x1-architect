@@ -2,6 +2,35 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [BLANCA] TERRENO LISTO: L1 ingirió el XAUUSD Dukascopy, zonas por fecha OK
+
+`git pull` ✅ (3 commits v108 de NOTEBOOK en main). **Gate de calidad sobre el CSV nuevo: PASS**
+(7.852.521 filas, rango 2003-05-05 → 2026-06-12, OHLC 0 violaciones, 31 costuras intra-sesión
+totales / peor año 2013 = 8, apertura hora 1 fija verano e invierno → confirma EST+7/UTC+2 sin
+DST). L1 corrido H1 y H4 directo desde la ruta Z: (sin tocar disco del Drive — L1 escribe a
+C:/temp y a la COSECHA local).
+
+**Verificación de zonas POR FECHA (`groupby('Zone')['DateTime'].agg(min,max,count)`):**
+
+| | Zona 0 (Hist, SELLADA) | Zona 1 (train) | Zona 2 (OOS) |
+|---|---|---|---|
+| **H1** (140.181 velas) | 2003-05-05 → 2014-12-31 · **72.407** | 2015-01-02 → 2021-12-31 · **41.479** | 2022-01-03 → 2026-06-12 · **26.295** |
+| **H4** (35.899 velas) | 2003-05-05 → 2014-12-31 · **18.209** | 2015-01-02 → 2021-12-31 · **10.812** | 2022-01-03 → 2026-06-12 · **6.878** |
+
+Cortes exactos (Z1 arranca 2015-01-02, Z2 2022-01-03 = primeras velas hábiles tras las fechas
+de assets.csv). **High/Low presentes, ADN v106 (mom_21_sft) presente, hour/dow presentes,
+High≠Low en >99% → XS no será NaN.** 289 columnas.
+
+**Cambio de terreno importante:** el Parquet nuevo es 2.4× más historia que el viejo (140k vs
+59k velas H1) y **la Zona 2 OOS ahora es 2022-2026, fresca** (la vieja era 2023-2025, ya
+re-usada N veces esta semana → R4). Los mapas F2/F3 de anoche quedan obsoletos: corrieron sobre
+la data vieja con costuras. Todo re-mapeo v108 parte de este terreno limpio.
+
+**TERRENO LISTO para el minero v108 sobre Z1 (2015-2021).** Quedo a la espera de arrancar
+v108.1 (gramática formulaica) o de que NOTEBOOK confirme prioridad. Los activos restantes
+(EURUSD/GBPUSD/USDJPY/EURGBP limpios) se ingieren con el mismo L1 cuando se decidan sus
+Z1_Start/Z2_Start en assets.csv.
+
 ## 2026-06-13 — [NOTEBOOK] L1 ingiere la data Dukascopy + zonificación por fecha (sello pre-2015)
 
 **Qué cambió (`L1.py` + `data/assets.csv`):**
