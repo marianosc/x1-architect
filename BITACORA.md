@@ -2,6 +2,74 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [BLANCA] CICLO DIAGNÓSTICO (b) EJECUTADO: 100% FAIL_GAP en los 8 silos + fix de infra (threading)
+
+Corrí el ciclo del commander (sin L1, ver abajo) sobre `X1_FULL_XAUUSD_H1` fresco, constitución
+INTACTA (PF 1.25, monkey 99/90, fricción 1.0, cooldown 25, posición única, Min_Trades dinámico
+estrenándose). **El primer intento CRASHEÓ; lo segundo es un hallazgo de infra + el embudo real.**
+
+### 1) BLOQUEO DE INFRA (resuelto): no era el monkey, era loky llenando el disco
+Primer intento: L3 LONG_MOMENTUM corrió 23 min y **crasheó `OSError errno 28: No space left on
+device`** / `PicklingError`; LONG_TREND quedó 40 min colgado → lo maté. **Diagnóstico:** con monkey
+OFF crasheaba IGUAL y en el *dispatch* → NO era avalancha de sobrevivientes al monkey. Era el backend
+**loky (procesos)** serializando/memmapeando los arrays globales al temp sobre el terreno fresco 2.4×
+más grande (`G_DF` ~162MB vs 68MB del viejo) → llenaba C:. **Fix (`L3.py`): backend `threading`.**
+Los kernels pesados (`simulate`, `_monkey_core`, `excursion_score`) son `@njit` y liberan el GIL →
+los threads paralelizan en real compartiendo `G_DF` en memoria: cero pickle, cero memmap, cero disco.
+Resultados idénticos (audit_worker sólo LEE los globales). **Ciclo completo: 15,2 min, 8/8 rc=0, sin
+crash.** SHORT L3 = 1,6-2,3 s; LONG L3 = 154-198 s. Tests 4/4 verdes con el cambio.
+
+### 2) EL EMBUDO (XAUUSD H1, terreno fresco Z1 2015-21 / Z2 2022-26, 767.732 candidatos)
+| Silo | total | FAIL_GAP | FAIL_TRADES | FAIL_PF | MONKEY_IS | MONKEY_OOS | PASS |
+|---|---|---|---|---|---|---|---|
+| LONG_MOMENTUM | 197.951 | **197.951** | 0 | 0 | 0 | 0 | 0 |
+| LONG_TREND | 170.536 | **170.536** | 0 | 0 | 0 | 0 | 0 |
+| LONG_VOLATILITY | 181.542 | **181.542** | 0 | 0 | 0 | 0 | 0 |
+| LONG_CYCLE | 214.858 | **214.858** | 0 | 0 | 0 | 0 | 0 |
+| SHORT (4 silos) | 2.845 | **2.845** | 0 | 0 | 0 | 0 | 0 |
+| **TOTAL** | **767.732** | **767.732 (100%)** | 0 | 0 | 0 | 0 | **0** |
+
+**El embudo está estrangulado en el PRIMER gate.** Cero candidatos llegan al min_t_req dinámico,
+cero al PF, **cero al monkey**. (SHORT sigue casi vacío en L2: 199-931/silo = oro alcista.)
+
+### 3) POR QUÉ: `Stag_Global=5000` FIJO mal-escalado al terreno largo (no es bug)
+La ventana juzgada (desde z1_start = Z1+Z2) es ahora **67.774 velas** (vs ~36k del viejo). Medí el
+`max_stag_real` real de reglas LONG representativas net de fricción 1.0:
+| Regla | max_stag | vs Stag 5000 |
+|---|---|---|
+| `rsi_13_sft<=55` Ret_24 (4816 trades) | **67.453** | FAIL_GAP |
+| `rsi_13_sft<=30` Ret_24 | 67.773 | FAIL_GAP |
+| `ema_55_sft<=Close` Ret_96 | 24.408 | FAIL_GAP |
+| `mom_21_sft>=0` Ret_48 | 19.363 | FAIL_GAP |
+
+Net de fricción 1.0, la equity **no sostiene máximos nuevos**: el pico se toca temprano y casi nunca
+se supera → el hueco ≈ ventana entera. Pesa el oro 2015-2019 (base lateral 1050-1350): toda regla
+juzgada desde 2015-01 arrastra años planos. FAIL_GAP los rechaza CORRECTAMENTE, pero al 100%
+**enmascara todo lo de abajo**.
+
+### 4) Min_Trades DINÁMICO: VALIDADO pero NO ejercitado
+`tools/probe_min_trades.py` replica la fórmula con duraciones reales del motor (velas_IS=41.479):
+Ret_12→**414**, **Ret_24→414** (= esperado de NOTEBOOK ✓), Ret_48→216, Ret_72→144, Ret_96→108,
+Sintética(dur 13.4)→414. Escala bien (no castiga salidas largas). **PERO FAIL_GAP (gate 3) precede
+al min_t_req (gate 5)** → en modo descarte el dinámico nunca se ejecuta en el run real.
+
+### 5) RESPUESTA A LA PREGUNTA CLAVE + DECISIONES PARA NOTEBOOK
+*¿El terreno fresco solo mueve la aguja, o el anti-edge persiste?* → **No se puede contestar con el
+pipeline en modo descarte**: FAIL_GAP mata el 100% ANTES de cualquier gate que mida edge (PF/monkey).
+Lo que SÍ se ve: net de fricción 1.0 el random no produce ni una equity que deje de estancarse.
+Decisiones (no toqué constitución, sólo infra):
+- **(c) El WATERFALL es ahora necesario, no opcional:** que los gates ETIQUETEN en vez de descartar es
+  la única forma de ver si algo sobreviviría min_t_req/PF/monkey detrás del muro FAIL_GAP. Este run es
+  la evidencia empírica de por qué.
+- **Recalibrar FAIL_GAP** (lo marcaste en ciclo 1 y sigue pendiente): Stag_Global como fracción de la
+  ventana juzgada, o juzgar el gap POR ZONA (Z1 sola = zona de selección) en vez de Z1+Z2 concatenado,
+  o relajarlo para fricción 1.0. Hoy 5000 sobre 67.774 velas es un muro estructural.
+- **min_t_req dinámico** queda validado y listo para cuando el embudo deje pasar candidatos hasta él.
+
+Artefactos: `tools/run_cycle_no_l1.py` (runner sin L1 — el CSV de `data/` es el XAUUSD VIEJO/podrido;
+re-correr L1 clobbearía el parquet fresco), `tools/probe_min_trades.py`, 8 AUDIT jsons locales en
+COSECHA (todos FAIL_GAP 100%). Espero tu decisión sobre (c) y/o la recalibración de FAIL_GAP.
+
 ## 2026-06-13 — [NOTEBOOK] Luz verde a (b): ciclo DIAGNÓSTICO de L3 sobre el terreno XAUUSD fresco
 
 Mariano confirmó la opción **(b)**. Antes de invertir en la gramática formulaica (v108.1) o en el

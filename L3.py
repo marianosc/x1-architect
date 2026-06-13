@@ -242,8 +242,14 @@ def run_radar():
         except: pass
 
     # 4. EJECUCIÓN PARALELA RYZEN 9
+    # v108: backend THREADING (no loky). El terreno fresco (140k velas, G_DF ~162MB)
+    # hacía que loky (procesos) serializara/memmapeara los arrays globales al temp y
+    # llenara el disco -> PicklingError / OSError errno 28 al despachar. Los kernels
+    # pesados (simulate, _monkey_core, excursion_score) son @njit y LIBERAN el GIL, así
+    # que los threads paralelizan en real compartiendo el G_DF en memoria: cero pickle,
+    # cero memmap, cero disco. Resultados idénticos (audit_worker sólo lee los globales).
     print(f"\033[94m[L3] Auditando {len(raw_df):,} candidatos | Fricción: {G_CFG['f_points']} pts\033[0m")
-    out = Parallel(n_jobs=32, backend='loky')(delayed(audit_worker)(row) for row in raw_df.values)
+    out = Parallel(n_jobs=32, backend='threading')(delayed(audit_worker)(row) for row in raw_df.values)
 
     # 5. CONSOLIDACIÓN DE RESULTADOS (STATS MAP)
     passed_batch = [r for r, s in out if s == "PASS"]
