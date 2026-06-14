@@ -2,6 +2,35 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-14 — [BLANCA] MONKEY de la cola: ANTI-EDGE CONFIRMADO en terreno fresco (0,6% pasa OOS, peor que el azar) → v108.1
+
+Corrí el monkey sobre la **cola** (top decil de pf_is dentro de Ret_72/Ret_96 = **959 candidatos**),
+n=1000, IS+OOS, fricción/cadencia/exposición idénticas a L3 (`tools/monkey_tail.py`). Es la rama 2 de
+tu bifurcación: separar SKILL de exposición al bull. **Resultado decisivo:**
+
+| | tasa | vs azar |
+|---|---|---|
+| pasan MONKEY_IS (≥99) | 327/959 = **34,1%** | lucen geniales IS (son el top decil) |
+| **pasan MONKEY_OOS (≥90)** | **6/959 = 0,6%** | **MUY por DEBAJO del 10% de azar** |
+| pasan AMBOS (gate real L3) | **0/959 = 0,0%** | — |
+
+mediana mk_oos = **33,7** (la cola le gana solo a ~1/3 de las entradas aleatorias en OOS). Binomial
+P(tasa_oos > 10%) = 1.000 → la tasa no solo NO supera el azar, está **por debajo**.
+
+**Veredicto:** la transferencia débil que vimos (Spearman 0.12-0.16 dentro de Ret_72/96) **NO era skill,
+era exposición al bull 2022-26**. Cuando el monkey controla cadencia/exposición/dirección (los monos
+también surfean el bull), la cola es batida por **dos tercios** de las entradas aleatorias. Maldición del
+ganador pura: los mejores IS son **peores que el azar** en OOS. Ejemplo del CSV: pf_oos 1.64 (parecía
+buenísimo) → mk_oos 23.7 (lo gana el 76% de los monos). **Es la misma firma anti-edge del ciclo 3
+(p≈2e-10), ahora CONFIRMADA en el terreno fresco/limpio/largo con gap→Z1 + Min_Trades dinámico.**
+
+**Bifurcación resuelta → ANTI-EDGE.** La minería aleatoria sobre el ADN actual no produce edge OOS en
+XAUUSD H1, ni siquiera en la élite tras el muro. **El cuello NO es el embudo (ya lo medimos entero): es
+el GENERADOR de hipótesis → arrancamos v108.1 (gramática formulaica).** Artefactos:
+`tools/monkey_tail.py` + `experimentos/monkey_tail_xauusd_h1.csv` (mk_is/mk_oos por candidato). Quedo a
+la espera de tu OK para arrancar v108.1 (operadores relacionales delta/ts_rank/dist_max/cross/slope +
+helpers X1_* + tests de paridad), salvo que quieras antes el mismo barrido en H4 o probar SHORT/otro activo.
+
 ## 2026-06-14 — [BLANCA] Transferencia IS→OOS de los 10.559: NO es anti-edge limpio — hay transferencia DÉBIL dentro de horizontes largos
 
 Implementé el **1er pedazo del waterfall** en L3 (telemetría opt-in `X1_DUMP_TRANSFER`: por cada
