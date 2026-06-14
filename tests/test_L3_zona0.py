@@ -31,12 +31,16 @@ ret24[bars_a[bars_a < Z1_START]] = -0.001          # A pierde en Zona 0
 ret24[bars_a[bars_a >= Z1_START]] = +0.01          # A gana en Z1+Z2
 ret24[bars_b] = +0.01                              # B gana solo 2000 velas y se apaga
 
+# C (v108): opera TODO Z1 (sana, máximos nuevos seguido) pero NADA en Z2 (muerta en el OOS)
+bars_c = bars_a[(bars_a >= Z1_START) & (bars_a < Z2_START)]
+
 sig_a = np.zeros(N, dtype=np.float32); sig_a[bars_a] = 1.0
 sig_b = np.zeros(N, dtype=np.float32); sig_b[bars_b] = 1.0
+sig_c = np.zeros(N, dtype=np.float32); sig_c[bars_c] = 1.0
 close = np.full(N, 100.0, dtype=np.float32)
 
-cols = ['Close', 'Close_sft', 'Ret_24', 'sig_a_sft', 'sig_b_sft']
-L3.G_DF = np.column_stack([close, close, ret24, sig_a, sig_b]).astype(np.float32)
+cols = ['Close', 'Close_sft', 'Ret_24', 'sig_a_sft', 'sig_b_sft', 'sig_c_sft']
+L3.G_DF = np.column_stack([close, close, ret24, sig_a, sig_b, sig_c]).astype(np.float32)
 L3.G_C_MAP = {n: i for i, n in enumerate(cols)}
 L3.G_RI_MAP = {'Ret_24': 2}
 L3.G_RET_1 = np.zeros(N)
@@ -51,7 +55,7 @@ CFG = {"min_t": 50, "min_t_fixed": True, "velas_is": Z2_START - Z1_START,
        "cooldown": 25, "monkey_train_min": 99.0, "monkey_test_min": 90.0,
        "monkey_n": 100, "z1_start": Z1_START}
 
-print("=== L3 ZONA 0 = CONTEXTO (v106.1) - 3 pruebas ===")
+print("=== L3 ZONA 0 = CONTEXTO (v106.1) + fix gap->Z1 (v108) - 4 pruebas ===")
 
 # 1. Sana en Z1+Z2 que pierde en Z0: NO debe morir por FAIL_GAP
 L3.G_CFG = dict(CFG)
@@ -71,5 +75,16 @@ L3.G_CFG = dict(CFG, z1_start=0)
 _, status_old = L3.audit_worker(["sig_a_sft >= 1", "LONG", "Ret_24", 0.0])
 assert status_old == "FAIL_GAP", f"con z1_start=0 A deberia morir FAIL_GAP (criterio viejo): {status_old}"
 print(f"OK  regresion: criterio viejo (z1_start=0) la mataba: {status_old}")
+
+# 4. v108 — fix gap/profit → Z1 sola: una regla SANA en Z1 pero MUERTA en Z2
+#    sobrevive el gap SOLO si z2_start excluye Z2 del juicio (antes, Z1+Z2, la mataba).
+L3.G_CFG = dict(CFG, z2_start=Z2_START)            # gap/profit juzgan Z1 sola
+_, status_z1 = L3.audit_worker(["sig_c_sft >= 1", "LONG", "Ret_24", 0.0])
+assert status_z1 != "FAIL_GAP", f"con z2_start (gap=Z1 sola) C no debe morir FAIL_GAP: {status_z1}"
+
+L3.G_CFG = dict(CFG)                                # sin z2_start → default len = Z1+Z2 (vieja semántica)
+_, status_z12 = L3.audit_worker(["sig_c_sft >= 1", "LONG", "Ret_24", 0.0])
+assert status_z12 == "FAIL_GAP", f"sin z2_start (gap=Z1+Z2) C debe morir FAIL_GAP por Z2 muerta: {status_z12}"
+print(f"OK  fix gap->Z1: con z2_start PASA el gap (muere luego {status_z1}); sin el muere por Z2 ({status_z12})")
 
 print("=== TODAS LAS PRUEBAS PASARON ===")

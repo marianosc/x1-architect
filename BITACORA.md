@@ -2,6 +2,51 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-13 — [BLANCA] Diagnóstico FAIL_GAP off: el muro real es PF≥1.25 (94,6%); monkey 5000 INVIABLE a esta escala
+
+Pull del fix gap→Z1 ✅. **Suite 4/4** + agregué el caso de cobertura que invitaste a `test_L3_zona0`
+(regla sana en Z1 / muerta en Z2: con `z2_start` PASA el gap, sin él muere FAIL_GAP → valida el fix
+BLANCA-side). Después corrí el ciclo con `anti_gap=false` (FAIL_GAP off), constitución intacta.
+
+### 1) El monkey a 5000 es INVIABLE con el muro apagado (no es crash de disco — es CPU)
+Primer intento (gap off, monkey ON): L3 LONG_MOMENTUM corrió **~5,5 h sin terminar el primer silo** y
+el proceso murió sin AUDIT. Causa: apagado el gap, miles cruzan al monkey, y **los kernels `@njit` no
+tienen `nogil=True`** → bajo el backend `threading` (el que puse para evitar el crash de disco de loky)
+el monkey corre **GIL-serializado en un solo core**. 10.931 sobrevivientes × 5000 monos × 2 zonas en
+1 core = horas. (El threading resolvió el disco PERO dejó L3 ~8× más lento por single-thread; con el
+gap on no se notaba porque nadie llegaba al monkey.) loky paraleliza pero crashea el disco con el
+G_DF de 162MB. **Ninguno de los dos backends corre el monkey 5000 sobre el embudo sin-gap.**
+
+### 2) El embudo PRE-MONKEY (gap off, monkey off — corrida barata, 8 silos, ~13 min)
+| | total | FAIL_PF≥1.25 | FAIL_TRADES | FAIL_OOS_EMPTY | →MONKEY |
+|---|---|---|---|---|---|
+| LONG_MOMENTUM | 197.705 | 188.244 | 6.203 | 4 | 3.254 |
+| LONG_TREND | 171.160 | 157.091 | 6.477 | 5.338 | 2.254 |
+| LONG_VOLATILITY | 180.969 | 173.394 | 5.011 | 53 | 2.511 |
+| LONG_CYCLE | 215.246 | 207.187 | 5.150 | 0 | 2.909 |
+| SHORT (4 silos) | 2.892 | 484 | 2.405 | 0 | 3 |
+| **TOTAL** | **767.972** | **726.400 (94,6%)** | **25.246** | **5.395** | **10.931** |
+
+**Apagado el gap, el muro real es `PF≥1.25` net de fricción 1.0: mata el 94,6%.** El `min_t_req`
+dinámico (validado: Ret_24→414) saca otro 3,3%. Quedan **10.931 (1,4%)** que cruzan al gate del monkey.
+La pregunta de tu directiva (*¿pasa alguno MONKEY_OOS en Z2?*) **sigue ABIERTA**: no pude correr el
+monkey sobre esos 10.931 de forma factible todavía.
+
+### 3) FORK para vos — cómo corremos el monkey sobre los 10.931 (necesito tu OK, toca método/infra)
+- **(A) Recalibrar FAIL_GAP en vez de apagarlo** (mi recomendación, alineada con tu plan de ciclo 1):
+  el gap NO es un bug a saltear, es el pre-filtro BARATO. Si Stag_Global se recalibra (fracción de la
+  ventana Z1 / o gap por zona) para que deje pasar unos cientos al monkey en vez de 10.931, el monkey a
+  5000 vuelve a ser factible Y el gap hace su trabajo. El `anti_gap=false` ya cumplió su rol: medir que
+  detrás del muro está el muro PF.
+- **(B) Monkey a `n` reducido** (X1_MONKEY_N=500/1000) como pase diagnóstico sobre los 10.931
+  (single-thread ~15-40 min) → re-confirmar a 5000 sólo los que pasen. Cambia el tamaño de muestra
+  (NO el umbral 90/99). Coarse pero contesta "¿pasa alguno?".
+- **(C) Paralelizar el monkey de verdad:** `nogil=True`+`prange` en `_monkey_core`, o una pool loky
+  sobre los 10.931 con data mínima (sin el G_DF). Da precisión 5000 y ~10 min, pero hay que RE-VALIDAR
+  la determinismo/paridad del monkey (cambia la secuencia RNG) — más riesgo.
+
+Decime cuál y lo corro. Artefactos: `tests/test_L3_zona0.py` (4 casos), 8 AUDIT jsons locales (pre-monkey).
+
 ## 2026-06-13 — [NOTEBOOK] Fix gap/profit → Z1 sola (L3) + diagnóstico FAIL_GAP off (medir barato)
 
 Mariano: "medí barato". El gap de estancamiento y el `profit_total` se juzgaban sobre `r_all[z1s:]` =
