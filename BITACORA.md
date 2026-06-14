@@ -2,6 +2,44 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-14 — [BLANCA] Transferencia IS→OOS de los 10.559: NO es anti-edge limpio — hay transferencia DÉBIL dentro de horizontes largos
+
+Implementé el **1er pedazo del waterfall** en L3 (telemetría opt-in `X1_DUMP_TRANSFER`: por cada
+candidato que LLEGA al gate del monkey vuelca `rule,side,exit,n_is,n_oos,pf_is,pf_oos`; `list.append`
+atómico bajo threading). Corrida gap off + monkey OFF (~13 min) → **10.559 sobrevivientes** a PF≥1.25.
+Análisis: `tools/analyze_transfer.py`.
+
+### Composición del pool (clave para leer todo lo demás)
+- **99,96% LONG** (10.555/10.559); SHORT = 4. **99,6% horizonte LARGO**: Ret_96=6.467, Ret_72=2.630,
+  Ret_48=1.451, **Ret_24=7**, sintética=4. El min_t_req dinámico (414 en Ret_24 vs 108 en Ret_96) +
+  el bull del oro empujan el pool a LONG-largo. **La Z2 2022-26 es un bull fuerte del oro.**
+
+### pf_oos (PF en Z2 fresca) — parece bueno, pero es RÉGIMEN
+- mediana **1.434**, Q1 1.285, Q3 1.585; **81,3% con pf_oos≥1.25, 97,4%≥1.0**. (El `mean`=237k es basura:
+  candidatos sin perdedores en OOS → PF≈∞; se ignora, mando con medianas/rangos.)
+- **NO prueba edge:** comprar-y-aguantar LONG en un bull da PF alto por la deriva. El juez es la
+  TRANSFERENCIA pf_is→pf_oos, no el nivel de pf_oos.
+
+### Transferencia IS→OOS (los jueces neutrales al régimen) — MIXTO
+- **Spearman GLOBAL = +0.052** (p=1e-7; rho²=0,27% var) → económicamente ~nulo. PERO está **diluido
+  entre-exits**.
+- **Dentro de cada exit (saca el confound entre-horizontes): Ret_72 rho=+0.165 (p=2e-17), Ret_96
+  rho=+0.119 (p=1e-21), Ret_48 rho=−0.009 (n.s.).** → en los horizontes largos hay transferencia
+  **positiva, robusta estadísticamente, pero débil** (rho²≈1,4-2,7% de varianza).
+- **Maldición del ganador (global):** decil top de pf_is → pf_oos mediana **1.386 < 1.438** del resto
+  (delta −0.053). Pero es en parte confound entre-exits (el decil top IS no es el mismo exit).
+
+### Veredicto (honesto): NO se cumple la rama "anti-edge limpio"
+La directiva bifurcaba: *Spearman≤0/mediana<1/curse → anti-edge → v108.1*; *Spearman>0 sig. + cola
+robusta → monkey n=1000 sobre la cola*. **Lo medido cae en el medio, con la balanza hacia la rama 2:**
+el Spearman global es nulo PERO dentro de Ret_72/Ret_96 es positivo y muy significativo (rho~0.12-0.16).
+Esa es justo la señal débil que el monkey de la cola está diseñado para separar de la mera exposición
+al bull. **Recomendación BLANCA: correr el monkey n=1000 SOLO sobre la cola** (top pf_is de Ret_72/
+Ret_96, ~1-2k candidatos, ~10 min factibles GIL-serializado): si la cola NO supera al azar por encima
+del ~10% de multiplicidad, ahí sí queda confirmado anti-edge y el cuello es la gramática (v108.1).
+**¿Lo corro, o preferís declarar el rho~0.15 demasiado débil y saltar directo a v108.1?** CSV de los
+10.559 + análisis pusheados.
+
 ## 2026-06-14 — [NOTEBOOK] Directiva: distribución PF_OOS + Spearman IS↔OOS de los 10.931 (maldición del ganador, barato)
 
 El caso 4 del test (gap→Z1) está perfecto, suite 4/4, aprobado. Antes de pelear con el monkey (que no

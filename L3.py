@@ -34,6 +34,7 @@ G_RI_MAP = None  # Mapa de columnas de retorno futuro
 G_ZONES = None   # Máscaras de Entrenamiento y OOS
 G_CFG = None     # Configuración de la Constitución (fricción, trades)
 G_FUSES = None   # Estado de los interruptores de seguridad del Dashboard
+G_TRANSFER = None  # v108 waterfall: lista de transferencia IS->OOS si X1_DUMP_TRANSFER (si no, None)
 
 # -----------------------------------------------------------------------------
 # BLOQUE 3: EL VERDUGO (AUDIT_WORKER)
@@ -108,6 +109,14 @@ def audit_worker(s_row):
         # El balance final debe ser positivo (desde Zona 1: Z0 es contexto)
         profit_total = np.sum(r_judge)
         if profit_total <= 0: return None, "FAIL_NEG_PROFIT"
+
+        # v108 WATERFALL (1er pedazo): si el dump está activo, registrar la transferencia
+        # IS->OOS de TODO candidato que LLEGA al gate del monkey (gates como columnas, no
+        # guillotina). list.append es atómico bajo el GIL/threading -> thread-safe.
+        if G_TRANSFER is not None:
+            pf_oos = float(np.sum(r_oos[r_oos > 0]) / (abs(np.sum(r_oos[r_oos < 0])) + 1e-9))
+            G_TRANSFER.append((rule, side, exit_l, int(len(r_is)), int(len(r_oos)),
+                               round(float(pf_is), 4), round(pf_oos, 4)))
 
         # E. CÁLCULO DE SALUD (RANKING HEALTH)
         eq_is_curve = np.cumsum(r_is)
@@ -250,10 +259,13 @@ def run_radar():
     # 4. EJECUCIÓN PARALELA RYZEN 9
     # v108: backend THREADING (no loky). El terreno fresco (140k velas, G_DF ~162MB)
     # hacía que loky (procesos) serializara/memmapeara los arrays globales al temp y
-    # llenara el disco -> PicklingError / OSError errno 28 al despachar. Los kernels
-    # pesados (simulate, _monkey_core, excursion_score) son @njit y LIBERAN el GIL, así
-    # que los threads paralelizan en real compartiendo el G_DF en memoria: cero pickle,
-    # cero memmap, cero disco. Resultados idénticos (audit_worker sólo lee los globales).
+    # llenara el disco -> PicklingError / OSError errno 28 al despachar. Threading
+    # comparte el G_DF en memoria (cero pickle/memmap/disco): RESUELVE el crash de disco.
+    # OJO: los kernels @njit NO tienen nogil=True -> bajo threading van GIL-serializados
+    # (single-core, ~8x más lento que loky). Tolerable con el gap ON (nadie llega al
+    # monkey); el monkey con el gap OFF es inviable así (ver BITACORA 2026-06-13).
+    global G_TRANSFER
+    G_TRANSFER = [] if os.environ.get('X1_DUMP_TRANSFER') else None
     print(f"\033[94m[L3] Auditando {len(raw_df):,} candidatos | Fricción: {G_CFG['f_points']} pts\033[0m")
     out = Parallel(n_jobs=32, backend='threading')(delayed(audit_worker)(row) for row in raw_df.values)
 
@@ -282,6 +294,17 @@ def run_radar():
     with open(COSECHA / f"AUDIT_{sym}_{side}_{fam}.json", 'w') as fj:
         json.dump({"total": len(raw_df), "qualified": len(passed_batch),
                    "harvested": len(final_elite), "details": stats_map}, fj)
+
+    # v108 waterfall: vuelca la transferencia IS->OOS (append: los 8 silos al mismo CSV).
+    dump_path = os.environ.get('X1_DUMP_TRANSFER')
+    if dump_path and G_TRANSFER:
+        import csv as _csv
+        write_hdr = not os.path.exists(dump_path)
+        with open(dump_path, 'a', newline='') as _f:
+            _w = _csv.writer(_f)
+            if write_hdr: _w.writerow(['rule', 'side', 'exit', 'n_is', 'n_oos', 'pf_is', 'pf_oos'])
+            _w.writerows(G_TRANSFER)
+        print(f"\033[93m[L3] Transfer dump: +{len(G_TRANSFER)} filas -> {dump_path}\033[0m")
 
     if raw_p.exists(): raw_p.unlink()
     print(f"\033[92m[L3] CICLO FINALIZADO. Élite de {len(final_elite)} Alphas actualizada.\033[0m")
