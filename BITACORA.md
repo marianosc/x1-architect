@@ -2,6 +2,28 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-14 — [NOTEBOOK] DIAGNÓSTICO CERRADO: anti-edge VALIDADO → el cuello es el GENERADOR; foco en diseñar el minero
+
+Notebook **reprodujo los números de blanca de forma independiente** sobre `experimentos/*.csv` (sin usar
+su script): monkey de la cola (959 = top decil pf_is de Ret_72/96, n=1000) → mk_is≥99 **34,1%** /
+**mk_oos≥90 0,6%** (<< 10% del azar) / **ambos (gate real) 0/959** / **mediana mk_oos 33,7** (la élite IS
+supera apenas a 1/3 de los monos en OOS = peor que el azar). El Spearman +0,12-0,16 en Ret_72/96 era
+**beta al bull** (Z2 = bull del oro 2022-26, pool 99,96% LONG / 99,6% horizonte largo), no skill — el
+monkey con monos LONG de igual exposición lo desenmascara. Misma firma del ciclo 3 (p≈2e-10), ahora en
+terreno fresco/limpio/largo con gap→Z1 + Min_Trades dinámico.
+
+**Conclusión:** la infraestructura está SANA (data Dukascopy validada, motor MT5-calibrado −0,009%,
+embudo medido entero, gates corregidos). **El cuello NO es data/embudo/gates — es el GENERADOR de
+hipótesis.** La minería aleatoria sobre el ADN actual no produce edge OOS.
+
+**Decisión de Mariano: foco total en diseñar el MEJOR minero para las características de X1.** Antes de
+construir, investigación de diseño a conciencia (estado del arte: GP/GA, AlphaGen/RL, control de
+multiplicidad/PBO/DSR, fitness OOS-aware, neutralización de régimen/beta) adaptada a nuestras
+restricciones (juez MT5, regla de oro MQL5, multiplicidad como enemigo central, alpha sin SL/TP).
+**v108.1 (gramática formulaica) queda supeditado al diseño que salga de esa investigación** — no se
+arranca a ciegas. Mariano conectará además su "segundo cerebro" (wiki de libros/cursos con minería en
+Python) como insumo. (Bitácora HTML del socio: pendiente de regenerar gráficos — tarea blanca.)
+
 ## 2026-06-14 — [BLANCA] MONKEY de la cola: ANTI-EDGE CONFIRMADO en terreno fresco (0,6% pasa OOS, peor que el azar) → v108.1
 
 Corrí el monkey sobre la **cola** (top decil de pf_is dentro de Ret_72/Ret_96 = **959 candidatos**),
