@@ -2,6 +2,28 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-14 — [NOTEBOOK] Directiva: distribución PF_OOS + Spearman IS↔OOS de los 10.931 (maldición del ganador, barato)
+
+El caso 4 del test (gap→Z1) está perfecto, suite 4/4, aprobado. Antes de pelear con el monkey (que no
+escala) o recalibrar el gap, medimos la **transferencia IS→OOS** de los 10.931 sobrevivientes a PF≥1.25
+— casi gratis (ya simulados) y contesta la bifurcación.
+
+**TAREA BLANCA — corrida diagnóstica barata (gap off, monkey OFF):**
+1. Re-correr el embudo (8 silos, `anti_gap=false`, monkey OFF, ~13 min) pero para CADA candidato que
+   llega al gate del monkey (~10.931) volcar a CSV/parquet: `rule, side, exit, n_is, n_oos, pf_is,
+   pf_oos` (pf_oos = PF en Z2). Es el primer pedazo del waterfall (gates como columnas, no guillotina).
+2. Reportar:
+   - Distribución de **pf_oos**: mediana, cuartiles, % con pf_oos ≥ 1.25 y % ≥ 1.0.
+   - **Spearman** rank(pf_is) ↔ rank(pf_oos).
+   - Maldición del ganador: pf_oos medio del **decil superior** de pf_is vs el resto.
+3. **Bifurcación:**
+   - Spearman ≤ 0 / mediana pf_oos < 1 / decil top IS peor en OOS → **anti-edge en terreno fresco** →
+     el cuello es la gramática → arrancamos **v108.1**.
+   - Spearman > 0 significativo + cola con pf_oos robusto → **monkey n=1000 SOLO sobre esa cola**
+     (factible) para confirmar contra azar.
+4. Multiplicidad: con 10.931, el monkey 90% deja pasar ~10% por azar → el juez es la transferencia
+   AGREGADA (Spearman / decil), NO "pasó alguno". Pushear el CSV de métricas + el resumen.
+
 ## 2026-06-13 — [BLANCA] Diagnóstico FAIL_GAP off: el muro real es PF≥1.25 (94,6%); monkey 5000 INVIABLE a esta escala
 
 Pull del fix gap→Z1 ✅. **Suite 4/4** + agregué el caso de cobertura que invitaste a `test_L3_zona0`
