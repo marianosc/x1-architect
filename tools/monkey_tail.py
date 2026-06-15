@@ -19,7 +19,8 @@ COOLDOWN, F_POINTS, SEED = 25, 1.0, 12345
 MK_IS_MIN, MK_OOS_MIN = 99.0, 90.0
 EXITS_TAIL = {'Ret_72', 'Ret_96'}
 
-from modules.x1_validators import monkey_test
+from modules.x1_validators import monkey_test, monkey_batch
+import time as _time
 
 df = pd.read_parquet("C:/temp/X1_FULL_XAUUSD_H1.parquet")
 zone = df['Zone'].values
@@ -43,12 +44,17 @@ print(f"=== MONKEY de la COLA | exits={sorted(EXITS_TAIL)} | top {TOP_PCT:.0f}% 
       f"| n_monkeys={N_MONKEYS} ===", flush=True)
 print(f"Cola: {len(tail)} candidatos de {len(pool)} en Ret_72/96. Corriendo monkey IS+OOS...", flush=True)
 
-rows = []
+# v108-B0: dos pasadas. (1) simulate serial -> arma los jobs del monkey;
+# (2) monkey_batch corre TODOS los monkeys en paralelo (kernels nogil). El
+# resultado es idéntico al loop serial (paridad probada) pero en minutos.
+rows = [{'exit': r['exit'], 'pf_is': r['pf_is'], 'pf_oos': r['pf_oos'],
+         'mk_is': -1.0, 'mk_oos': -1.0} for _, r in tail.iterrows()]
+jobs, tags = [], []  # tags = (índice_fila, 'mk_is'/'mk_oos')
+t_sim0 = _time.time()
 for k, r in tail.iterrows():
     sim = simulate(G, cmap, ri, r['rule'], r['exit'], r['side'], cooldown=COOLDOWN, friction_points=F_POINTS)
     idx_e = np.where(sim['mask'])[0]
     durs, r_all = sim['durations'], sim['vector']
-    rec = {'exit': r['exit'], 'pf_is': r['pf_is'], 'pf_oos': r['pf_oos'], 'mk_is': -1.0, 'mk_oos': -1.0}
     for zmask, ret_z, fr, key in ((z_is, ret_is, fr_is, 'mk_is'), (z_oos, ret_oos, fr_oos, 'mk_oos')):
         ent = idx_e[zmask[idx_e]]
         if len(ent) < 1:
@@ -56,11 +62,16 @@ for k, r in tail.iterrows():
         pos = np.searchsorted(idx_e, ent)
         expo = int(max(1, round(float(np.mean(durs[pos])))))
         strat = float(r_all[zmask].sum())
-        res = monkey_test(ret_z, len(ent), expo, strat, r['side'], n_monkeys=N_MONKEYS, seed=SEED, friction_per_trade=fr)
-        rec[key] = res['pvalue'] * 100.0
-    rows.append(rec)
-    if (k + 1) % 100 == 0:
-        print(f"  ...{k+1}/{len(tail)}", flush=True)
+        jobs.append(dict(ret_1=ret_z, n_trades=len(ent), exposure=expo, strat_total=strat,
+                         side=r['side'], n_monkeys=N_MONKEYS, seed=SEED, friction_per_trade=fr))
+        tags.append((k, key))
+print(f"  simulate (serial): {len(tail)} candidatos en {_time.time()-t_sim0:.1f}s "
+      f"-> {len(jobs)} monkey-jobs", flush=True)
+t_mk0 = _time.time()
+results = monkey_batch(jobs)  # PARALELO (threading + nogil)
+print(f"  monkey ({N_MONKEYS} monos × {len(jobs)} jobs, PARALELO): {_time.time()-t_mk0:.1f}s", flush=True)
+for (k, key), res in zip(tags, results):
+    rows[k][key] = res['pvalue'] * 100.0
 
 R = pd.DataFrame(rows)
 n = len(R)

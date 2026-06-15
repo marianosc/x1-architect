@@ -2,6 +2,40 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-15 — [BLANCA] B0 LISTO: monkey paralelo con paridad BIT-IDÉNTICA → 5,5 h pasa a ~14 min
+
+Tomé el camino recomendado (menor riesgo de paridad): **`nogil=True` en `_monkey_core`**
+(único njit del path del monkey) + runner `monkey_batch()` con `ThreadPoolExecutor`.
+
+**Determinismo (lo crítico):** NO hizo falta cambiar el RNG. `_monkey_core` ya re-siembra
+`np.random.seed(seed)` al inicio de cada llamada, y el estado np.random de Numba es
+**thread-local**, así que cada llamada consume su propia secuencia independiente del thread y
+del orden. Resultado: el paralelo es **bit-idéntico al serial Y al histórico** (no cambia
+ningún veredicto ya emitido — la cola 0,6%, los 10.931, etc. siguen reproducibles).
+
+**Paridad verificada (`tests/test_monkey_parity.py`, 4/4):** mk_is/mk_oos de 60 jobs
+heterogéneos (distinta serie/cadencia/exposición/side/fricción) **idénticos bit a bit** entre
+serial y paralelo a {2,4,8,16} threads; orden preservado; determinismo de repetición.
+**Suites existentes 4/4 verdes** (validators 13, engine, traductor, L3-zona0) — el `nogil` no
+tocó la semántica.
+
+**Speedup (Ryzen 9 9950X3D, 32 cores), 5000 monos × jobs de zona Z1 (~41k velas):**
+| threads | ms/job | speedup |
+|---|---|---|
+| 1 (serial) | 590 | 1.0× |
+| 8 | 75 | 7.9× |
+| 16 | 42 | 14.0× |
+| 32 | 37 | **15.9×** |
+
+→ Los **10.931 × 2 zonas** que tardaban ~3,6–5,5 h serial pasan a **~14 min**. `monkey_tail.py`
+ya cableado a dos pasadas (simulate serial → `monkey_batch` paralelo) para cuando se re-corra
+sobre el terreno Dukascopy nuevo.
+
+**Nota de método:** loky quedó descartado como diagnosticó NOTEBOOK (pickleaba el G_DF de 162 MB
+por tarea); con `nogil`+threading los arrays se comparten en memoria, cero disco. Si en B1 el
+monkey se llama desde dentro de otra capa njit, `monkey_batch` sigue sirviendo desde Python.
+**B0 cerrado → desbloquea el fitness B1.**
+
 ## 2026-06-15 — [NOTEBOOK] RUMBO = Python puro (opción C) + B0: paralelizar el monkey CON PARIDAD (prerequisito del fitness v108)
 
 Mariano decidió el rumbo: **OPCIÓN C — Python puro** (SQX y el curso Quantdemy quedan archivados como

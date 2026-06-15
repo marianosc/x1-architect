@@ -20,6 +20,9 @@
 # Estos validadores implementan los fusibles 'monkey_test' (muerto en L3
 # v104.920) y la métrica nueva XS. Numba opcional, igual que x1_engine.
 # ##########################################################################
+import os
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 
 try:
@@ -57,12 +60,20 @@ def rolling_forward_returns(ret_1, exposure):
     return fwd
 
 
-@njit(cache=True)
+@njit(cache=True, nogil=True)
 def _monkey_core(fwd, prob_entry, exposure, n_monkeys, seed, friction):
     """Bucle de monos fiel al motor de Marc: Bernoulli vela a vela + busyUntil.
 
     `friction` (retorno fraccional por trade) se descuenta en CADA entrada del
     mono, igual que simulate() se lo descuenta a la estrategia.
+
+    v108-B0: nogil=True → bajo backend `threading` este kernel LIBERA el GIL,
+    así varias llamadas (un candidato cada una) corren en paralelo de verdad
+    compartiendo los arrays en memoria (sin pickle/disco como haría loky).
+    DETERMINISMO: se re-siembra `np.random.seed(seed)` al inicio de CADA llamada
+    y el estado np.random de Numba es THREAD-LOCAL, así que la secuencia de cada
+    llamada es independiente del resto de threads y del orden → idéntico al
+    serial (verificado en tests/test_monkey_parity.py).
     """
     np.random.seed(seed)
     n = fwd.shape[0]
@@ -148,6 +159,30 @@ def monkey_test(ret_1, n_trades, exposure, strat_total, side='LONG',
         'monkey_trades': float(counts.mean()),
         'prob_entry': float(prob_entry),
     }
+
+
+def monkey_batch(jobs, n_threads=None):
+    """Corre una lista de monkey_test EN PARALELO (v108-B0).
+
+    `jobs`: lista de dicts con los kwargs de monkey_test (ret_1, n_trades,
+    exposure, strat_total, side, n_monkeys, seed, friction_per_trade, ...).
+    Devuelve la lista de resultados EN EL MISMO ORDEN que `jobs`.
+
+    Paraleliza con threads: como `_monkey_core` es `nogil=True`, las llamadas
+    liberan el GIL y corren de verdad en paralelo (a diferencia de un njit
+    normal, que lo retiene y serializa). Sin pickle ni disco — los arrays se
+    comparten en memoria, evitando el crash de loky con el G_DF de 162 MB.
+
+    DETERMINISTA: cada job re-siembra su propio estado (RNG thread-local de
+    Numba), así que el resultado es IDÉNTICO al serial sea cual sea el número
+    de threads o el orden de ejecución (ver tests/test_monkey_parity.py).
+    """
+    if n_threads is None:
+        n_threads = max(1, min(32, (os.cpu_count() or 4)))
+    if n_threads == 1 or len(jobs) <= 1:
+        return [monkey_test(**j) for j in jobs]
+    with ThreadPoolExecutor(max_workers=n_threads) as ex:
+        return list(ex.map(lambda j: monkey_test(**j), jobs))
 
 
 # -----------------------------------------------------------------------------
