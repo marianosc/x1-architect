@@ -2,6 +2,32 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-15 — [NOTEBOOK] RUMBO = Python puro (opción C) + B0: paralelizar el monkey CON PARIDAD (prerequisito del fitness v108)
+
+Mariano decidió el rumbo: **OPCIÓN C — Python puro** (SQX y el curso Quantdemy quedan archivados como
+referencia; no se construye sobre SQX aunque haya conectores MCP). **Plan del minero en 5 bloques:**
+**B0** paralelizar el monkey · **B1** fitness = monkey-OOS + CPCV + parsimonia (⭐ la brújula, diseño
+notebook) · **B2** gramática formulaica (el v108.1) · **B3** motor GA + warm-start (el v108.2) · **B4**
+selección DSR + Z2 holdout intocable + reality check MT5. Arrancamos **B0 (blanca)** en paralelo con el
+diseño del fitness B1 (notebook + Mariano).
+
+**TAREA BLANCA — B0: que el monkey escale (hoy 5,5 h single-thread).** Es prerequisito: el fitness B1 va
+a correr el monkey muchísimas veces, así que tiene que ser barato.
+- **Diagnóstico previo:** bajo backend `threading` los kernels `@njit` del monkey corren GIL-serializados
+  en 1 core; `loky` paraleliza pero crashea el disco serializando el G_DF de 162 MB.
+- **Camino recomendado (menor riesgo de paridad):** `nogil=True` en los kernels njit del monkey
+  (`_monkey_core` y los que llame en `modules/x1_validators.py`) → bajo `threading` liberan el GIL → los
+  threads paralelizan **a nivel de candidatos** compartiendo G_DF en memoria (cero pickle/disco). Cada
+  candidato corre su monkey igual que antes; solo cambia que corren en paralelo.
+- **⚠️ CRÍTICO — paridad/determinismo:** el RNG del monkey debe ser **local por llamada** (semilla
+  derivada determinísticamente, p.ej. seed base + índice/zona del candidato), NO un estado global
+  compartido entre threads (data race → no determinista).
+- **Validar:** (a) **test de paridad serial-vs-paralelo** — `mk_is`/`mk_oos` de un set de candidatos
+  IDÉNTICO entre la versión vieja serial y la nueva paralela; (b) suite 4/4 verde; (c) reportar el
+  speedup (objetivo: los 10.931×5000×2 que tardaban 5,5 h → minutos).
+- Si `nogil` no alcanza: alternativa `prange` dentro de `_monkey_core` (paraleliza los N monos) — pero
+  cambia la secuencia RNG → re-validar paridad con más cuidado. Pushear el resultado + el test de paridad.
+
 ## 2026-06-14 — [NOTEBOOK] DIAGNÓSTICO CERRADO: anti-edge VALIDADO → el cuello es el GENERADOR; foco en diseñar el minero
 
 Notebook **reprodujo los números de blanca de forma independiente** sobre `experimentos/*.csv` (sin usar
