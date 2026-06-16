@@ -2,6 +2,40 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-15 — [NOTEBOOK] B1: especificación del FITNESS v108 (monkey-OOS + CPCV + cascada + parsimonia)
+
+B0 cerrado y aprobado (monkey paralelo bit-idéntico, `monkey_batch`, ~16×). Diseño del fitness
+APROBADO por Mariano (las 5 decisiones + esquema en cascada). Spec para construir B1:
+
+**OBJETIVO:** un fitness por candidato (regla) que mida *cuánto le gana al azar en el OOS-interno de Z1,
+robusto y simple*, **neutral a la beta de régimen**. **Z2 (2022-26) INTOCABLE** — holdout final.
+
+**COMPONENTES:**
+1. **CPCV sobre Z1 (2015-21):** partir en **K=6** bloques contiguos; folds combinatorios (test = grupos
+   de bloques, resto = contexto); **purging** por el solape de Ret_N (purgar velas a ≤N del borde de cada
+   test-block) + **embargo**. Cada fold → un OOS-interno.
+2. **Cascada por candidato:**
+   a. **Pre-filtro barato** (sin monkey): descarta si no pasa el `min_t` dinámico (ya existe) o si PF_IS en
+      los folds ≤ ~1.0. Es un colador GRUESO (solo basura obvia), NO el juez.
+   b. Los que pasan → **monkey REAL reducido (n=300-500)** vía `monkey_batch` (B0) en cada test-fold OOS
+      → un `mk_oos` por fold.
+3. **Agregación:** `fitness_core` = **mediana** de los `mk_oos` sobre folds (mediana al inicio; Q25 si
+   queremos más exigencia de consistencia).
+4. **Parsimonia:** `fitness = fitness_core − λ·complejidad` (complejidad = nº de nodos de la regla); λ
+   chico al inicio, a calibrar.
+5. **n escala:** n=300-500 en evolución; **n=5.000 en finalistas** (selección B4).
+6. **Determinismo:** semilla de monos por candidato (RNG thread-local de B0) → fitness reproducible, el GA
+   no persigue ruido.
+
+**VALIDACIÓN de B1 ANTES de meterlo en el GA (control barato):** aplicar este fitness a los candidatos
+del diagnóstico (`experimentos/transfer_xauusd_h1.csv` o re-minado con gramática vieja) y confirmar que
+**ordena bien**: los que tenían `pf_oos` alto por **beta al bull** deben quedar con **fitness BAJO** (el
+monkey los mata). Reportar: correlación fitness↔mk_oos real, y que la beta-LONG-larga ya NO lidera el
+ranking. Si el fitness honesto manda la beta al fondo, B1 queda validado.
+
+**Restricciones:** no tocar Z2; no meter SL/TP (alpha pura); pushear con tests. Tras B1 validado → B2
+(gramática formulaica) y B3 (GA + warm-start).
+
 ## 2026-06-15 — [BLANCA] B0 LISTO: monkey paralelo con paridad BIT-IDÉNTICA → 5,5 h pasa a ~14 min
 
 Tomé el camino recomendado (menor riesgo de paridad): **`nogil=True` en `_monkey_core`**
