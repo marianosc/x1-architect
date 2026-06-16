@@ -2,6 +2,48 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [NOTEBOOK] B3: especificación del MINERO EVOLUTIVO (GA + warm-start dirigido)
+
+Reemplaza la tirada uniforme de L2 (500k random/silo, sin aprendizaje) por un GA dirigido. **La apuesta
+real es el WARM-START** (sembrar con hipótesis económicas, no ruido): random ya probó dar anti-edge, y la
+expresividad sola (B2a) tampoco; el GA refina ideas CON TESIS. Aprobado por Mariano.
+
+**GENOTIPO:** `{conds:[(lhs, op, rhs), …1-3], side, exit}`. lhs = indicador (viejo o formulaico de B2a);
+exit EVOLUCIONA (parte del genotipo). **FITNESS = `fitness_population` (B1, n=1000+Q25, CPCV K=6 sobre
+Z1). Z2 INTOCABLE.**
+
+**WARM-START (3 hipótesis, sembradas LONG + espejo SHORT, vieja + formulaica):**
+- **H1 Pullback en tendencia** (isla TREND): `ema_200_sft <= Close_sft | rsi_14_sft <= 40` ;
+  form `slope10_ema_55_sft >= 0 | tsrank50_rsi_14_sft <= 0.3`
+- **H2 Reversión en extremo de volatilidad** (isla VOLATILITY): `rsi_8_sft <= 20 | natr_14_sft >= <q90>` ;
+  form `tsrank100_natr_14_sft >= 0.9 | rsi_8_sft <= 20`
+- **H3 Breakout con fuerza** (isla TREND/MOM): `adx_14_sft >= 25 | Close_sft >= ema_21_sft` ;
+  form `distmax20_close_sft >= -2.0 | delta5_adx_14_sft >= 0`
+Cada isla = sus semillas + variantes mutadas + un % random de exploración.
+
+**GA:** población **1.000/isla × 4 islas** (TREND/MOM/VOL/CYCLE) × **~40 generaciones**. Selección
+torneo k=3 + elitismo (top ~10%). Crossover = mezcla de condiciones de 2 padres (recorte 1-3). Mutación
+(~0,25): cambiar indicador/op/umbral, add/del condición, cambiar exit, y **promover un indicador a su
+versión formulaica** (así los operadores de B2a entran DIRIGIDOS). Migración entre islas cada ~10 gen
+(top individuos). Parada: 40 gen o estancamiento del mejor por K gen.
+
+**SALIDA → B4:** top-N diversos por fitness. Registrar el **nº de individuos ÚNICOS evaluados** (= N para
+el DSR de B4). **Veredicto de B3:** ¿algún ganador del GA supera, en el **holdout Z2 + monkey OOS** (una
+sola medición, B4), el techo de la gramática vieja random? SÍ → hay edge y seguimos (B2b MQL5 de sus
+operadores + deploy). NO → no hay edge explotable en XAUUSD H1 con este ADN → decisión estratégica.
+
+Construir `modules/ga_miner.py` (o reescribir L2) usando el Motor Único + fitness B1. Pushear con tests
++ la primera corrida sobre XAUUSD H1.
+
+---
+**ROADMAP post-B3 (ideas de Mariano, NO ahora — registradas para no perderlas):**
+1. **Destilar los ~50 libros de estrategias del segundo cerebro** (Vault) — patrones de entrada que no
+   están escritos taxativamente → más semillas de warm-start (v2).
+2. **Minero de FUERZA BRUTA complementario:** motor lo más rápido posible + indicadores curados (TA-Lib) +
+   **ACCIÓN DE PRECIO** (espacio de features NUEVO, no explorado) + un **embudo rápido** que filtre por
+   profit barato y deje caer las rentables al **funnel completo** (fitness B1 + monkey + holdout). Complementa
+   al GA dirigido por el lado de la cantidad/exploración bruta de un espacio nuevo (price action).
+
 ## 2026-06-16 — [BLANCA] B2a CONSTRUIDO + control: la gramática formulaica NO aporta (aún) → B2b en pausa
 
 **Construido y probado** (`modules/formulaic.py`, `tests/test_formulaic.py` 5/5): los 4 operadores
