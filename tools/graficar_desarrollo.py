@@ -216,4 +216,31 @@ if os.path.exists(bcsv) and os.path.exists(icsv):
                  "→ no hay edge que sobreviva N", fontsize=10.5, y=1.02)
     save(fig, "v108_b4_barrido.png")
 
+# ── B5 — price action vs el DSR + capstone: TODA la materia prima OHLC ──
+pacsv = os.path.join(ROOT, "experimentos", "pa_b5.csv")
+b4icsv = os.path.join(ROOT, "experimentos", "b4_investigate.csv")
+if os.path.exists(pacsv) and os.path.exists(b4icsv):
+    PA = pd.read_csv(pacsv); B4 = pd.read_csv(b4icsv)
+    items = [("XAUUSD H1\ntécnico", 0.031, GRIS)]            # B4 DSR XAUUSD H1
+    for _, r in B4.iterrows():
+        items.append((f"{r['sym']} {r['tf']}\ntécnico", float(r['best_dsr']), GRIS))
+    for _, r in PA.iterrows():
+        items.append((f"{r['sym']} {r['tf']}\nprice action", float(r['best_dsr']), AZUL))
+    items.sort(key=lambda x: x[1])
+    labels = [a for a, _, _ in items]; vals = [b for _, b, _ in items]; cols = [c for _, _, c in items]
+    fig, ax = plt.subplots(figsize=(11, 4.6))
+    bars = ax.bar(range(len(items)), vals, color=cols)
+    ax.axhline(0.95, color=ROJO, ls="--", lw=2); ax.text(0.1, 0.90, "umbral DSR 0,95 (edge real)", color=ROJO, fontsize=10)
+    for i, v in enumerate(vals):
+        ax.text(i, v + 0.02, f"{v:.2f}", ha="center", fontsize=8.5)
+    ax.set_xticks(range(len(items))); ax.set_xticklabels(labels, fontsize=8)
+    ax.set_ylim(0, 1.0); ax.set_ylabel("mejor DSR (Sharpe deflactado por ~30-48k pruebas)")
+    from matplotlib.patches import Patch
+    ax.legend(handles=[Patch(color=GRIS, label="indicadores técnicos (B0-B4)"),
+                       Patch(color=AZUL, label="acción de precio / geometría (B5)")], loc="upper left", fontsize=9)
+    ax.set_title("v108 — la materia prima OHLC, AGOTADA: ningún activo/TF/método supera el DSR\n"
+                 "ni osciladores (gris) ni geometría del precio (azul) → el edge NO está en el OHLC",
+                 fontsize=11)
+    save(fig, "v108_b5_priceaction.png")
+
 print("\nListo: PNGs en docs/desarrollo/")

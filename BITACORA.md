@@ -2,6 +2,42 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-17 — [BLANCA] ACCIÓN DE PRECIO: tampoco supera el DSR → el edge NO está en el OHLC (materia prima OHLC AGOTADA)
+
+**Construido** (`modules/price_action.py`, `tests/test_price_action.py` 5/5): 29 features OHLC-geométricas
+(forma de vela `close_pos`/`body_ratio`/wicks/`candle_dir`, tamaño vs ATR `range_atr`/`body_atr`, estructura
+de swings `dist_swinghigh/low`/`n_higher_highs`/`n_lower_lows`, rupturas `breakout_high/low`/`gap_up/down`,
+secuencias `n_consec_up/down`). Kernels numba nogil, factory on-demand, shift `_sft`=feature de la vela t-1
+(sin lookahead), todas función de OHLC → traducibles a MQL5. L1 ahora incluye `Open` (XAUUSD H1+H4
+regenerados). GA con vocabulario SOLO price action (`replace_lhs`) + semillas PA económicas. Gráfico:
+`docs/desarrollo/v108_b5_priceaction.png`.
+
+**Funnel completo (GA pop 1000×4×40, holdout Z2 + monkey n=5000 + DSR deflactado por N):**
+
+| activo TF | fitZ1 | N únicos | n_oos med | máx mk | pasan ≥90 | binomial p | máx SR | SR0 | **DSR** |
+|---|---|---|---|---|---|---|---|---|---|
+| XAUUSD H1 | 94 | 36.291 | 206 | 97,5 | 4/20 | 0,133 (azar) | 0,279 | 0,324 | **0,31** |
+| XAUUSD H4 | 94 | 27.792 | 69 | 52,7 | 0/20 | 1,000 | 0,241 | 0,818 | **0,00** |
+
+**Veredicto: price action 0/2 con DSR≥0,95 — TAMPOCO supera la deflación.** Más aún: la geometría del
+precio es **incluso más débil** que los indicadores en el monkey (H1 PA da 4/20 p=0,13 = ni siquiera bate
+el azar, vs algunos combos técnicos que sí lo batían pero morían en el DSR). En H4 el monkey rinde peor que
+el azar (0/20). El honesto riesgo que registró NOTEBOOK ("otro B2a") se confirmó: con rigor, **descartamos
+también la geometría del OHLC**.
+
+**CIERRE DE LA MATERIA PRIMA OHLC (capstone):** en TODO el programa v108 — random, gramática formulaica
+(B2a), GA dirigido técnico (B3), barrido multi-activo/TF (B4) y ahora acción de precio (B5) — **ningún
+método/activo/TF supera el DSR de 0,95**. El mejor de todos fue EURGBP H4 técnico (0,60) y se quedó lejos.
+**El edge NO está en el OHLC** (ni osciladores ni geometría). El pipeline (motor MT5-calibrado, monkey
+paralelo, fitness CPCV, GA con vocabularios inyectables, DSR) queda probado como infraestructura.
+
+**P para NOTEBOOK/Mariano (siguiente vía, ya que el OHLC se agotó):** las 3 del roadmap son **exógenas al
+precio**: (1) **features macro del oro** (DXY, tasas reales, VIX, etc. — datos nuevos que Mariano baja);
+(2) **cartera de débiles** (combinar muchas señales sub-umbral correlacionadas-bajo, estilo portfolio);
+(3) **destilar el Vault** (patrones de entrada de los ~50 libros → semillas que el random no inventa).
+¿Cuál primero? La (1) es la que más probabilidad tiene de traer señal nueva (información que el OHLC no
+contiene), pero necesita que bajes los datos macro; la (3) la puedo ir preparando con la infra actual.
+
 ## 2026-06-16 — [NOTEBOOK] Materia prima nueva: MINERO DE ACCIÓN DE PRECIO (Mariano eligió price action)
 
 "Lo barato" agotado (B4). Mariano elige **acción de precio** como materia prima nueva. Honestidad
