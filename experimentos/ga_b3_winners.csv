@@ -1,0 +1,21 @@
+rule,side,exit,fit,pf_is,n_oos,form,mk_oos_z2
+distmin100_natr_55_sft >= 0.06|distmin100_natr_21_sft >= 0.1078|rsi_8_sft <= 50.4627,SHORT,Ret_24,96.55,1.371,145,True,92.7
+rsi_8_sft <= 50.4627|delta10_mom_200_sft <= -5.9155|distmin100_natr_55_sft >= 0.06,SHORT,Ret_24,92.45,1.106,149,True,87.0
+natr_13_sft >= 0.353|distmin100_natr_21_sft <= 0.1078|distmin100_natr_13_sft >= 0.0007,LONG,Ret_12,93.5,1.413,201,True,82.8
+bbw_8_sft <= ema_34_sft|natr_13_sft >= 0.353|distmin100_natr_21_sft <= 0.1078,LONG,Ret_12,92.6,1.264,201,True,77.0
+distmax20_cci_55_sft <= -68.9592|slope5_cci_48_sft >= -9.4195|slope5_natr_120_sft <= -0.0012,LONG,Ret_72,93.80000000000001,1.706,118,True,55.2
+mom_21_sft <= -12.3684|delta10_mom_200_sft <= -5.9155|tsrank100_rsi_24_sft <= 0.0606,SHORT,Ret_72,96.30000000000001,1.326,172,True,46.4
+distmax20_cci_55_sft <= -68.9592|slope5_natr_120_sft <= -0.0012|tsrank100_cci_5_sft <= 0.899,LONG,Ret_72,93.5,1.618,117,True,45.9
+distmax20_cci_55_sft <= -68.9592|slope5_natr_120_sft <= -0.0012|delta5_cci_21_sft <= ema_55_sft,LONG,Ret_72,93.1,1.599,122,True,38.3
+distmax20_cci_55_sft <= -68.9592|slope5_natr_120_sft <= -0.0012|slope3_cci_5_sft <= ema_34_sft,LONG,Ret_72,93.4,1.599,122,True,38.3
+stoch_5_sft >= 19.3291|slope5_natr_120_sft <= -0.0012|distmax20_cci_55_sft <= -68.9592,LONG,Ret_72,93.7,1.697,117,True,36.6
+slope5_natr_120_sft <= -0.0012|slope3_cci_8_sft >= -33.7323|distmax20_cci_55_sft <= -68.9592,LONG,Ret_72,94.19999999999999,1.648,119,True,35.5
+distmax100_cci_200_sft >= -269.5739|slope5_natr_120_sft <= -0.0012|distmax20_cci_55_sft <= -68.9592,LONG,Ret_72,93.5,1.735,116,True,34.3
+natr_13_sft >= 0.353|distmax100_rsi_8_sft <= -19.3089|slope3_natr_21_sft <= -0.0059,LONG,SINTETICA_REVERSE,96.5,1.254,197,True,26.1
+efficiency_120_sft <= 0.223|slope5_cci_48_sft <= -0.0439|slope5_natr_120_sft <= -0.0012,LONG,Ret_72,94.0,1.691,124,True,2.5
+slope5_natr_120_sft <= -0.0012|slope5_cci_48_sft <= -0.0439|slope3_natr_144_sft <= -0.0006,LONG,Ret_72,94.0,1.693,130,True,1.9
+slope5_natr_120_sft <= ema_21_sft|slope5_cci_48_sft <= -0.0439|slope5_natr_120_sft <= -0.0012,LONG,Ret_72,93.2,1.623,130,True,1.9
+slope5_natr_120_sft <= -0.0012|slope5_cci_48_sft <= -0.0439|distmax20_adx_8_sft <= ema_13_sft,LONG,Ret_72,92.69999999999999,1.623,130,True,1.9
+slope5_cci_48_sft <= -0.0439|slope5_natr_120_sft <= -0.0012|distmax100_adx_200_sft <= ema_89_sft,LONG,Ret_72,92.9,1.623,130,True,1.9
+tsrank20_adx_13_sft <= 1.0|slope5_cci_48_sft <= -0.0439|slope5_natr_120_sft <= -0.0012,LONG,Ret_72,92.4,1.623,130,True,1.9
+distmax100_adx_89_sft <= ema_8_sft|slope5_cci_48_sft <= -0.0439|slope5_natr_120_sft <= -0.0012,LONG,Ret_72,92.4,1.623,130,True,1.9

@@ -24,7 +24,7 @@ def save(fig, name):
 # ── v108 — línea de tiempo de bloques del minero ──
 fig, ax = plt.subplots(figsize=(10, 2.4))
 blocks = [("B0\nmonkey paralelo", "hecho"), ("B1\nfitness CPCV", "hecho"),
-          ("B2a\ngramática", "hecho*"), ("B3\nGA + warm-start", "pend"),
+          ("B2a\ngramática", "hecho*"), ("B3\nGA + warm-start", "hecho*"),
           ("B4\nDSR + holdout + MT5", "pend")]
 for i, (lab, st) in enumerate(blocks):
     c = VERDE if st == "hecho" else (AMBAR if st.endswith("*") else "#d9d6cc")
@@ -164,5 +164,29 @@ if os.path.exists(ccsv):
     fig.suptitle("B2a — control orgánico: la gramática formulaica NO aporta (todavía). Más señales, "
                  "no mejor edge OOS → B2b en pausa", fontsize=11, y=1.02)
     save(fig, "v108_b2a_control.png")
+
+# ── B3 — GA: convergencia Z1 vs el holdout Z2 honesto (multiplicidad) ──
+import json as _json
+gmeta = os.path.join(ROOT, "experimentos", "ga_b3_meta.json")
+gwin = os.path.join(ROOT, "experimentos", "ga_b3_winners.csv")
+if os.path.exists(gmeta) and os.path.exists(gwin):
+    meta = _json.load(open(gmeta)); W = pd.read_csv(gwin).sort_values("mk_oos_z2", ascending=False)
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.4))
+    bh = meta["best_hist"]
+    axL.plot(range(len(bh)), bh, color=AZUL, lw=2, marker='o', ms=3)
+    axL.set_xlabel("generación"); axL.set_ylabel("mejor fitness Z1 (B1, monkey-OOS Q25)")
+    axL.set_title(f"El GA SÍ optimiza Z1: {bh[0]:.0f}→{bh[-1]:.0f}\n{meta['n_unique']:,} individuos únicos evaluados")
+    axL.set_ylim(0, 100)
+    mk = W["mk_oos_z2"].values
+    x = np.arange(len(mk))
+    axR.bar(x, mk, color=[VERDE if v >= 90 else GRIS for v in mk])
+    axR.axhline(90, color=ROJO, ls="--", lw=1.5); axR.text(0.3, 91.5, "gate real mk_oos 90", color=ROJO, fontsize=9)
+    n90 = int((mk >= 90).sum())
+    axR.set_xlabel("top-20 ganadores (por fitness Z1)"); axR.set_ylabel("mk_oos en HOLDOUT Z2 (n=5000)")
+    axR.set_title(f"...pero NO transfiere a Z2: {n90}/20 pasa (azar ~2/20)\nbinomial p=0,88 → dentro del ruido de 48k pruebas")
+    axR.set_ylim(0, 100)
+    fig.suptitle("B3 — minero evolutivo (GA + warm-start): optimiza Z1 pero el holdout Z2 no supera el azar "
+                 "(multiplicidad) → DSR (B4) decide", fontsize=10.5, y=1.02)
+    save(fig, "v108_b3_ga.png")
 
 print("\nListo: PNGs en docs/desarrollo/")

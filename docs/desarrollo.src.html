@@ -95,6 +95,16 @@ gates) está validado; el cuello es el GENERADOR de hipótesis. Se construye el 
   (B3) los pruebe; si sus ganadores los usan y transfieren, ahí se traducen. Bajo búsqueda aleatoria no ayudan;
   el GA podría hallar combinaciones que sí.</div></div>
 
+<div class="card"><a href="desarrollo/v108_b3_ga.png" target="_blank"><img src="desarrollo/v108_b3_ga.png" alt="B3 GA"></a>
+  <div class="pie"><span class="num">B3</span><b>Minero evolutivo (GA + warm-start): optimiza Z1, pero el holdout Z2 NO supera el azar.</b>
+  Izq — el GA dirigido (sembrado con 3 hipótesis económicas, 4 islas, 40 generaciones, 47.928 individuos
+  únicos) <b>sube el fitness Z1 de 79 a 97</b>: la maquinaria funciona. Der — pero al medir sus 20 mejores en
+  el <b>holdout Z2 intocable</b> (una sola medición), <b>solo 1/20 pasa el gate 90</b> (el azar daría ~2/20;
+  binomial p=0,88). El único que pasa (92,7) es una extracción afortunada entre 48k pruebas — multiplicidad.
+  <b>Veredicto honesto: no hay edge explotable con este ADN en XAUUSD H1.</b> Cierra el bucle: random→anti-edge,
+  expresividad sola→nada, GA dirigido→optimiza Z1 pero no transfiere. Lo que falta es <b>materia prima nueva</b>
+  (acción de precio / destilar los libros del Vault), no más optimización.</div></div>
+
 <h2 id="preguntas">✅ Preguntas — RESPONDIDAS por NOTEBOOK (2026-06-16)</h2>
 <div class="ok"><b>P1 — RESUELTA.</b> Barrido corrido con el juez justo (EURGBP). <b>Config elegida: n=1000 + Q25</b>
 (fijada como default en <code>fitness_v108.py</code>). Honestidad: el fitness le gana al naive donde la beta

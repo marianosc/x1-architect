@@ -2,6 +2,37 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [BLANCA] B3 CORRIDO: el GA optimiza Z1 (96,5) pero el holdout Z2 NO supera el azar → decisión estratégica
+
+**Construido** (`modules/ga_miner.py`, `tests/test_ga_miner.py` 4/4): GA dirigido con warm-start de las 3
+hipótesis económicas (vieja + formulaica, LONG + espejo SHORT, periodos snapeados 14→13), 4 islas
+TREND/MOM/VOL/CYCLE, torneo k=3 + elitismo, crossover, mutación 0,25 (incl. **promoción a formulaico** →
+los operadores de B2a entran DIRIGIDOS), migración cada 10 gen. Fitness = `fitness_population` (B1, Q25).
+Z2 jamás entra al fitness. Gráfico: `docs/desarrollo/v108_b3_ga.png`.
+
+**Primera corrida XAUUSD H1** (pop 1000 × 4 islas × 40 gen, n=500 evolución / 5000 holdout, 1,2 min):
+- **El GA SÍ optimiza Z1: mejor fitness 79→96,5.** **47.928 individuos únicos** evaluados (= N para el DSR).
+- **HOLDOUT Z2 (monkey OOS n=5000, UNA medición) de los top-20 diversos por fitness:** mediana mk_oos_z2
+  **36**, máx **92,7**, y **1/20 pasa el gate 90** (azar esperado ~2/20). **Binomial P(tasa > azar 10%) =
+  0,88 → NO supera el azar.** Transferencia fit(Z1)→mk_z2 Spearman +0,26 (débil).
+
+**VEREDICTO HONESTO (R4): NO hay edge deflactado.** El único gate-passer (92,7) es una sola extracción
+entre 48k pruebas — el espejismo de multiplicidad que el monkey/DSR existen para matar. El GA optimiza
+brillante la brújula Z1 pero **eso NO transfiere a Z2**: el top-20 por fitness rinde como el azar en el
+holdout. (Mi runner traía un veredicto naive "máx≥90 → hay edge"; lo corregí para que mida la TASA de
+pase vs el azar — el número honesto es el binomial.)
+
+**Esto cierra el bucle del proyecto:** random → anti-edge; expresividad sola (B2a) → no aporta; GA dirigido
+con tesis + warm-start + formulaico → optimiza Z1 pero **tampoco rompe el holdout Z2**. Con este ADN
+(indicadores técnicos) en XAUUSD H1 no aparece edge explotable que sobreviva la multiplicidad.
+
+**Decisión estratégica para NOTEBOOK/Mariano** (P): el embudo, el juez y el minero están sanos y medidos;
+lo que falta es **materia prima distinta**. Las dos vías del roadmap apuntan justo a eso: (1) **acción de
+precio** como espacio de features nuevo (no explorado), (2) **destilar los ~50 libros del Vault** para
+warm-starts con tesis más ricas. ¿Arrancamos B4 formal (DSR con N=47.928 sobre estos ganadores, para
+cerrar el veredicto con la métrica institucional) — o saltamos directo a la materia prima nueva (price
+action / Vault), dado que el binomial ya dice que no hay nada que deflactar acá?
+
 ## 2026-06-16 — [NOTEBOOK] B3: especificación del MINERO EVOLUTIVO (GA + warm-start dirigido)
 
 Reemplaza la tirada uniforme de L2 (500k random/silo, sin aprendizaje) por un GA dirigido. **La apuesta

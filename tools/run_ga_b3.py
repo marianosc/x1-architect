@@ -96,8 +96,20 @@ print(f"  mejor fitness Z1 (B1): {max(R['best_hist']):.1f}")
 print(f"  individuos únicos evaluados: {R['n_unique']:,}  (= N para el DSR de B4)")
 print(f"  HOLDOUT Z2 (monkey OOS n={N_HOLDOUT}, UNA medición) de los top-{len(W)} diversos:")
 print(W[['mk_oos_z2', 'fit', 'pf_is', 'n_oos', 'side', 'exit', 'form', 'rule']].head(12).to_string(index=False))
+from scipy import stats as _st
 n90 = int((W['mk_oos_z2'] >= 90).sum())
-print(f"\n  ganadores que pasan mk_oos_z2>=90 (gate real): {n90}/{len(W)} | máx mk_oos_z2 {W['mk_oos_z2'].max():.1f}")
-print(f"  TECHO gramática vieja random (control B2a, ref): top-50 mk_z2 ~58-60, máx individual ~89")
-print(f"  -> {'HAY edge: el GA supera el techo random' if W['mk_oos_z2'].max() >= 90 else 'sin edge claro: ningún ganador pasa el gate 90 en Z2'}")
+# CONTROL DE MULTIPLICIDAD: con N únicos, que 1 pase 90 puede ser azar. El gate
+# honesto es si la TASA de pase del top supera el ~10% del azar (binomial).
+pbin = _st.binomtest(n90, len(W), 0.10, alternative='greater').pvalue
+rho = W['fit'].corr(W['mk_oos_z2'], method='spearman')
+print(f"\n  HOLDOUT: pasan mk_oos_z2>=90: {n90}/{len(W)} (azar ~{0.10*len(W):.0f}/{len(W)}) | "
+      f"máx {W['mk_oos_z2'].max():.1f} | mediana {W['mk_oos_z2'].median():.0f}")
+print(f"  binomial P(tasa_pase > azar 10%): {pbin:.3f}  ({'>0.05 = NO supera el azar' if pbin > 0.05 else 'supera el azar'})")
+print(f"  transferencia fit(Z1)→mk_oos_z2 (Spearman): {rho:+.3f}")
+print(f"  N únicos = {R['n_unique']:,} → el DSR de B4 (deflactado por N) es el juez FORMAL")
+if pbin <= 0.05 and W['mk_oos_z2'].max() >= 90:
+    print(f"  -> HAY indicio de edge: la tasa de pase supera el azar; confirmar con DSR (B4)")
+else:
+    print(f"  -> SIN edge deflactado: el/los gate-passer caen dentro del ruido de multiplicidad "
+          f"(el GA optimiza Z1 pero NO transfiere a Z2). Decisión estratégica.")
 print(f"\n[B3] total {(time.time()-t0)/60:.1f} min. CSV: experimentos/ga_b3_winners.csv", flush=True)
