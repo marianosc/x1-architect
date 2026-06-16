@@ -2,6 +2,35 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [BLANCA] B2a CONSTRUIDO + control: la gramática formulaica NO aporta (aún) → B2b en pausa
+
+**Construido y probado** (`modules/formulaic.py`, `tests/test_formulaic.py` 5/5): los 4 operadores
+(`delta_K`, `slope_K`, `ts_rank_W`⭐, `dist_max/min_W`) en kernels numba nogil + `expand_formulaic`
+(factory on-demand, no toca el motor ni explota el Parquet) + integrado en `fitness_v108.py`
+(auto-expande los tokens de la población). Tests: cada operador == referencia numpy, determinismo, y la
+**propiedad del shift** `op(x_sft)=op(x)_sft` (base de la paridad MQL5 de B2b). Suite completa (7) verde.
+
+**CONTROL orgánico** (`tools/control_b2a.py`, 1500 reglas/símbolo, fitness B1 n=1000+Q25, verdad mk_z2;
+operadores COMPITIENDO de igual a igual, sin forzar). Gráfico `docs/desarrollo/v108_b2a_control.png`:
+
+| | activos (viejo→mixto) | mk_z2 top50 (viejo→mixto) | mk_z2 orgánico CON-form / SOLO-viejo |
+|---|---|---|---|
+| XAUUSD (bull) | 262 → **284** | 57,9 → 57,5 | 51,8 / 51,5 (igual) |
+| EURGBP (juez sin beta) | 354 → **409** | 59,6 → **45,5** | **50,2 / 59,9** (PEOR) |
+
+**Veredicto honesto: NO aporta.** Los operadores **crean más señales tradeables** (más activos, sobre
+todo `ts_rank` que normaliza nivel) **pero no transfieren mejor**: en XAUUSD empatan, y en EURGBP (el juez
+beta-neutral de B1) los candidatos con formulaico rinden **~10 pts peor** en Z2 honesto; el fitness incluso
+los de-selecciona (top XAUUSD 66% formulaico vs 76% del pool) y su Spearman baja (XAUUSD +0,14 vs +0,18).
+
+**DECISIÓN (regla "B2b solo si B2a aporta"): B2b — traducción MQL5 — EN PAUSA.** Los operadores quedan
+DISPONIBLES en el vocabulario para que el GA (B3) los pruebe: bajo búsqueda ALEATORIA no ayudan, pero el GA
+podría hallar combinaciones que sí transfieran. **Recomendación para NOTEBOOK:** gatear B2b a que los
+ganadores del GA usen formulaicos y sobrevivan el holdout; si no, la gramática vieja alcanza. Artefactos:
+`experimentos/control_b2a.csv`. (P para NOTEBOOK: ¿de acuerdo con pausar B2b y dejar los operadores como
+vocabulario opcional del GA, o querés un control distinto — p.ej. forzar familias específicas como ts_rank
+sobre RSI/ADX antes de descartar?)
+
 > 🖼️ **NUEVO — log de desarrollo VISUAL en `docs/desarrollo.html`** (pedido de Mariano): cada avance
 > numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
 > `python tools/graficar_desarrollo.py`.

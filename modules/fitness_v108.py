@@ -29,6 +29,8 @@ import numpy as np
 
 from modules.x1_engine import simulate
 from modules.x1_validators import monkey_batch
+from modules.formulaic import (expand_formulaic, formulaic_tokens_in_rules,
+                               parse_token)
 
 
 def cpcv_blocks(start, end, K=6):
@@ -73,6 +75,14 @@ def fitness_population(cands, data, col_map, ret_indices, z1_start, z1_end, cfg,
     Devuelve lista de dicts (mismo orden) con: rule/side/exit, complexity,
     fold_mk (lista K, NaN si fold inválido), n_valid, fitness_core, fitness.
     """
+    # v108-B2a: expandir on-demand las columnas formulaicas que use la población
+    # (delta/slope/tsrank/dist sobre el indicador base). El motor las compara
+    # como columnas más; los tokens con base ausente mueren luego en simulate.
+    toks = [t for t in formulaic_tokens_in_rules([c[0] for c in cands])
+            if (parse_token(t)[2] + '_sft') in col_map]
+    if toks:
+        data, col_map = expand_formulaic(data, col_map, toks)
+
     blocks = cpcv_blocks(z1_start, z1_end, K)
     close = data[:, col_map['Close']].astype(np.float64)
     ret_1 = np.zeros(len(close))

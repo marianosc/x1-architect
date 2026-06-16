@@ -24,7 +24,7 @@ def save(fig, name):
 # ── v108 — línea de tiempo de bloques del minero ──
 fig, ax = plt.subplots(figsize=(10, 2.4))
 blocks = [("B0\nmonkey paralelo", "hecho"), ("B1\nfitness CPCV", "hecho"),
-          ("B2\ngramática", "pend"), ("B3\nGA + warm-start", "pend"),
+          ("B2a\ngramática", "hecho*"), ("B3\nGA + warm-start", "pend"),
           ("B4\nDSR + holdout + MT5", "pend")]
 for i, (lab, st) in enumerate(blocks):
     c = VERDE if st == "hecho" else (AMBAR if st.endswith("*") else "#d9d6cc")
@@ -34,7 +34,7 @@ for i, (lab, st) in enumerate(blocks):
     if i < len(blocks) - 1:
         ax.annotate("", xy=(i + 1, 0.5), xytext=(i + 0.9, 0.5),
                     arrowprops=dict(arrowstyle="->", color=GRIS))
-ax.text(1.45, 1.15, "* mecanismo OK, tuning a decidir por NOTEBOOK", color=AMBAR, fontsize=8.5)
+ax.text(1.55, 1.15, "* B2a construido y probado, pero el control dice que NO aporta aún (B2b en pausa)", color=AMBAR, fontsize=8)
 ax.set_xlim(-0.1, 5); ax.set_ylim(-0.1, 1.4); ax.axis("off")
 ax.set_title("Minero evolutivo v108 — rumbo Python puro (opción C)", fontsize=12)
 save(fig, "v108_timeline.png")
@@ -132,5 +132,37 @@ if os.path.exists(bcsv):
     fig.suptitle("B1 TUNING — Q25 elegido: en EURGBP (juez sin beta) la mediana NO de-sesga (64% largo) "
                  "y Q25 sí (14%)", fontsize=11.5, y=1.02)
     save(fig, "v108_b1_tuning.png")
+
+# ── B2a — ¿aporta la gramática formulaica? (control orgánico) ──
+ccsv = os.path.join(ROOT, "experimentos", "control_b2a.csv")
+if os.path.exists(ccsv):
+    C = pd.read_csv(ccsv)
+    syms = ['XAUUSD', 'EURGBP']
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.4))
+    # izq: más señales activas (viejo vs mixto)
+    x = np.arange(len(syms)); w = 0.38
+    vie = [int(C[(C.sym == s) & (C.vocab == 'VIEJA')]['activos'].iloc[0]) for s in syms]
+    mix = [int(C[(C.sym == s) & (C.vocab == 'MIXTA')]['activos'].iloc[0]) for s in syms]
+    axL.bar(x - w / 2, vie, w, color=GRIS, label="gramática vieja")
+    axL.bar(x + w / 2, mix, w, color=VERDE, label="+ formulaica")
+    for i, (a, b) in enumerate(zip(vie, mix)):
+        axL.text(i - w / 2, a + 4, str(a), ha="center", fontsize=9)
+        axL.text(i + w / 2, b + 4, str(b), ha="center", fontsize=9, color=VERDE)
+    axL.set_xticks(x); axL.set_xticklabels(syms); axL.set_ylabel("candidatos activos (operan en ≥3 folds)")
+    axL.set_title("Los operadores SÍ crean más señales tradeables", fontsize=10.5); axL.legend(fontsize=8)
+    # der: pero la transferencia honesta NO mejora (organico CON-form vs SOLO-viejo)
+    fm = [float(C[(C.sym == s) & (C.vocab == 'MIXTA')]['form_mk'].iloc[0]) for s in syms]
+    om = [float(C[(C.sym == s) & (C.vocab == 'MIXTA')]['old_mk'].iloc[0]) for s in syms]
+    axR.bar(x - w / 2, om, w, color=GRIS, label="candidatos SOLO-viejo")
+    axR.bar(x + w / 2, fm, w, color=ROJO, label="candidatos CON-formulaico")
+    for i, (a, b) in enumerate(zip(om, fm)):
+        axR.text(i - w / 2, a + 0.6, f"{a:.0f}", ha="center", fontsize=9)
+        axR.text(i + w / 2, b + 0.6, f"{b:.0f}", ha="center", fontsize=9, color=ROJO)
+    axR.axhline(50, color=GRIS, ls=":", lw=1)
+    axR.set_xticks(x); axR.set_xticklabels(syms); axR.set_ylabel("mk_z2 honesto medio (activos)")
+    axR.set_title("...pero NO transfieren mejor (EURGBP: peor)", fontsize=10.5); axR.legend(fontsize=8)
+    fig.suptitle("B2a — control orgánico: la gramática formulaica NO aporta (todavía). Más señales, "
+                 "no mejor edge OOS → B2b en pausa", fontsize=11, y=1.02)
+    save(fig, "v108_b2a_control.png")
 
 print("\nListo: PNGs en docs/desarrollo/")
