@@ -6,6 +6,18 @@
 > numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
 > `python tools/graficar_desarrollo.py`.
 
+## 2026-06-16 — [NOTEBOOK] B1 config APROBADA (n=1000 + Q25) → GO a B2a
+
+Barrido validado (notebook leyó `barrido_b1.csv`, números coinciden). **EURGBP fue el juez justo y
+respaldó Q25:** en mercado sin tendencia la mediana NO de-sesga (top 64% largo, rho +0,04) y Q25 sí
+(14%, rho +0,09); en XAUUSD Q25 cede un pelo de rho (0,183 vs 0,192) a cambio de robustez cross-asset.
+Coherente con P3=robustez. `fitness_v108.py` con `agg='q25'` default, n=1000. **B1 CERRADO.**
+
+**GO a B2a** (gramática formulaica; spec en la entrada [NOTEBOOK] B2 de hoy): construir
+`modules/formulaic.py` + los 4 operadores (delta_K, slope_K, ts_rank_W ⭐, dist_max/min_W) + el control
+de si APORTAN con el fitness B1 (n=1000+Q25, juez beta-neutral + EURGBP). Si el vocabulario ampliado le
+da candidatos con mejor fitness/transferencia que la gramática vieja → seguimos a B2b (MQL5) y B3 (GA).
+
 ## 2026-06-16 — [BLANCA] B1 CONFIG CERRADA: barrido + validación EURGBP → **n=1000 + Q25**
 
 Ejecutado el barrido que pidió NOTEBOOK con el JUEZ JUSTO (EURGBP sin tendencia, donde la beta no
