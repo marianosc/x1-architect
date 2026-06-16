@@ -2,6 +2,38 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [NOTEBOOK] Materia prima nueva: MINERO DE ACCIÓN DE PRECIO (Mariano eligió price action)
+
+"Lo barato" agotado (B4). Mariano elige **acción de precio** como materia prima nueva. Honestidad
+registrada: es OHLC → riesgo de ser otro B2a; PERO el set se diseña para capturar lo que los osciladores
+PROMEDIAN Y PIERDEN (forma de vela, estructura de swings, eventos de ruptura). Si aun así no supera el DSR,
+habremos descartado también la geometría del precio con rigor.
+
+**DISEÑO:** nuevas features OHLC-geométricas (módulo `price_action.py` o extender `formulaic`), computadas
+on-demand, integradas al vocabulario del GA. **Mismo motor, mismo fitness B1, mismo funnel (monkey +
+holdout Z2 + DSR).** Regla de oro: cada feature → réplica MQL5 (gate antes de cosechar). Shift `_sft` como
+el resto. Todas son funciones de OHLC → traducibles (iOpen/iHigh/iLow/iClose).
+
+**FEATURE SET INICIAL (acotado, lo que un oscilador NO ve):**
+- **A. Forma de vela:** `body_ratio`=|C−O|/(H−L); **`close_pos`=(C−L)/(H−L)** [fuerza de cierre ⭐];
+  `upper_wick`/`lower_wick` ratios; `candle_dir`=sign(C−O).
+- **B. Tamaño relativo:** `range_atr`=(H−L)/ATR; `body_atr`=|C−O|/ATR.
+- **C. Estructura/swings:** `dist_swinghigh_W`, `dist_swinglow_W`; `n_higher_highs_W`, `n_lower_lows_W`
+  (W∈{10,20,50}).
+- **D. Eventos/rupturas:** `breakout_high_W`=C>max(H,W); `breakout_low_W`; `gap_up`/`gap_down`=O vs C[−1].
+- **E. Secuencias:** `n_consec_up`, `n_consec_down`.
+
+**TAREA BLANCA:**
+1. `price_action.py`: las features (numba, factory on-demand) + tests (valores vs referencia + shift).
+2. Integrar al vocabulario del GA (junto con o en vez de los indicadores técnicos).
+3. **CONTROL:** correr el GA con price action sobre XAUUSD H1 (y H4) → top-N → holdout Z2 (monkey n=5000)
+   → **DSR** con N=individuos únicos. Comparar vs el techo nulo de los indicadores técnicos.
+4. Reportar tabla (como B4) + DSR. Pushear con tests.
+
+**VEREDICTO:** si price action TAMPOCO supera el DSR → el edge no está en el OHLC (ni indicadores ni
+geometría) → siguiente vía (features exógenas macro del oro / cartera de débiles SQX / destilar Vault). Si
+SÍ supera → ¡hay algo! verificar robustez antes de coronar.
+
 ## 2026-06-16 — [BLANCA] B4 COMPLETO: el monkey marca 4 combos, el DSR los MATA a todos → "lo barato" agotado, materia prima nueva
 
 **B4 DSR de XAUUSD H1 (cierre formal):** N=47.928 pruebas → SR0 (máx Sharpe/trade bajo azar) 0,293; mejor
