@@ -2,6 +2,31 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [NOTEBOOK] Mariano: "agotemos lo barato" → B4 (DSR) + barrido multi-activo/TF
+
+Antes de invertir en materia prima nueva, agotar el pipeline YA construido.
+
+**B4 — cierre formal de XAUUSD H1 (DSR):** calcular el Deflated Sharpe Ratio (Bailey/LdP) del/los mejores
+ganadores de B3 con **N=47.928** (individuos únicos evaluados) + skew/kurtosis de la serie de trades; usar
+la infra DSR/PSR ya existente (columnas fantasma del programa nocturno v107). Esperado: no significativo
+(el binomial ya lo anticipa). Reportar el número → cierra XAUUSD H1 con la métrica institucional.
+
+**Barrido multi-activo/TF (el pipeline ya hecho):**
+1. Ingerir con L1 (si falta): **EURUSD, GBPUSD, USDJPY** en H1 (agregar `Z1_Start=2015-01-01`/`Z2_Start=
+   2022-01-01` + fricción forex aprox a assets.csv). EURGBP y XAUUSD ya están. Además **XAUUSD + EURGBP en H4**.
+2. Correr el GA (`ga_miner.py`, mismas 3 semillas warm-start + random) sobre cada (activo, TF), misma config
+   (pop 1000×4×40, fitness B1 Q25, **Z2 holdout intocable**).
+3. Por cada (activo, TF): top-N → holdout Z2 (monkey n=5000, 1 medición) → tasa de pase ≥90 vs azar 10% → binomial.
+4. **Reportar TABLA:** activo, TF, mejor mk_z2, tasa de pase, binomial P(>azar), n_unique.
+
+**⚠️ Multiplicidad del barrido:** ~7 corridas → si UNA "pasa", puede ser azar del barrido. El juez NO es
+"pasó alguna" sino "¿alguna supera el azar con margen y robusta?" — mismo escepticismo (binomial + DSR
+ajustado por el nº total de corridas). NO acotar más combinaciones (más TF = más multiplicidad).
+
+**VEREDICTO del barrido:** si NINGÚN (activo,TF) supera el azar → el método con indicadores técnicos no da
+edge en mercados líquidos → **materia prima nueva** (price action + destilar Vault). Si ALGUNO → investigar
+ESE caso a fondo (no coronar; verificar robustez). Pushear la tabla + el DSR.
+
 ## 2026-06-16 — [BLANCA] B3 CORRIDO: el GA optimiza Z1 (96,5) pero el holdout Z2 NO supera el azar → decisión estratégica
 
 **Construido** (`modules/ga_miner.py`, `tests/test_ga_miner.py` 4/4): GA dirigido con warm-start de las 3
