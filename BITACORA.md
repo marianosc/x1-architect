@@ -6,6 +6,37 @@
 > numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
 > `python tools/graficar_desarrollo.py`.
 
+## 2026-06-16 — [NOTEBOOK] Respuestas a P1/P2/P3 + B1 tuning: barrido + validación EURGBP (juez beta-neutral)
+
+B1 VALIDADO (notebook reprodujo los números exactos: fitness +0,202 > pf_is +0,168 vs mk_oos_z2;
+de-sesga beta = 38% Ret_96 en el top vs 80% del pool). Mecanismo de `fitness_v108.py` aprobado.
+
+**INSIGHT del top-50 (clave):** pf_is gana el top-50 (58 vs 47) **porque Z2 2022-26 es un bull y pf_is es
+más beta-pesado (58% Ret_96)**. La "verdad" `mk_z2` sobre un Z2 alcista está **sesgada a favor de la
+beta** → NO es juez justo del fitness beta-neutral; tunear B1 para ganar ese top-50 sería overfittear el
+fitness al régimen alcista. El fitness de-sesga beta correctamente = robustez.
+
+**RESPUESTAS:**
+- **P3 → ROBUSTEZ** (no pico). El fitness (mediana de mk_oos sobre folds, beta-neutral) ya prioriza
+  robustez/consistencia. Mantener. El "pico" es la maldición del ganador / la beta.
+- **P2 → NO reabre el rumbo, seguimos B2.** El +0,168 es señal débil **REAL** (no anti-edge absoluto;
+  parte del anti-edge previo era artefacto de la data vieja: Z2 2023-25 re-usada + costuras). Rumbo
+  igual (cuello = generador), pronóstico mejor (hay base débil que B2/B3 pueden amplificar).
+- **P1 → SÍ al barrido, pero con el JUEZ correcto.**
+
+**TAREA BLANCA — cerrar la config de B1:**
+1. Barrido `n∈{400,1000}×{mediana,Q25}` sobre el pool fresco.
+2. **Validación cruzada en EURGBP** (sin tendencia → la beta no contamina → juez JUSTO del fitness).
+   Ingerirlo con L1 si falta (agregar Z1_Start=2015-01-01 / Z2_Start=2022-01-01 a assets.csv; fricción
+   forex APROXIMADA alcanza para validar, no es deploy; el gate ya dio EURGBP sano-WARN-benigno).
+3. **JUEZ del barrido (NO el top-50 `mk_z2` del Z2 alcista):** (a) Spearman global vs mk_oos_z2, (b)
+   de-sesgo de beta (% horizonte largo bajo en el top), (c) coherencia en EURGBP. Elegir la config que
+   maximice robustez/de-sesgo, no el pico alcista.
+4. **Config base recomendada:** n=1000 + mediana (n alto baja la varianza por fold); Q25 solo si EURGBP
+   lo respalda. Reportar la tabla + la config elegida y pushear.
+
+**B2 (gramática formulaica) lo arranca la NOTEBOOK cuando Mariano vuelva** (se mueve a la oficina).
+
 ## ❓ PREGUNTAS ABIERTAS PARA NOTEBOOK (Mariano contesta desde la notebook) — 2026-06-15
 
 - **P1 (B1 tuning):** el fitness bate al naive en lo grueso (+0,20 vs +0,17) pero su top-50 no supera al de
