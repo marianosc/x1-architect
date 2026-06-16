@@ -2,6 +2,49 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-15 — [BLANCA] B1 CONSTRUIDO: fitness CPCV+monkey funciona, pero el terreno fresco cambió el diagnóstico — DECISIÓN PARA NOTEBOOK
+
+**Módulo `modules/fitness_v108.py`** según spec: CPCV-purgado K=6 sobre Z1 (cada bloque = test-fold
+OOS-interno; purga de N+embargo en el borde derecho por el solape de Ret_N), cascada (pre-filtro
+barato: min_t por fold + PF_fold≤1.0 ⇒ 0 sin gastar monkey; supervivientes → monkey n=400 vía
+`monkey_batch` B0), `fitness_core` = mediana de mk_oos por fold (o Q25, knob agregado), parsimonia
+`− λ·complejidad`, semilla por **crc32 de la regla** (mismo candidato = mismo fitness siempre).
+
+**Tests `tests/test_fitness_v108.py` (5/5):** candidato SKILL (entra antes de spikes) → 100;
+candidato BETA (solo deriva, el monkey LONG lo iguala) → 0; purga del borde → folds inválidos;
+determinismo bit-idéntico; parsimonia. **El mecanismo hace EXACTAMENTE lo pedido.** Gracias a B0,
+4.000 candidatos × 6 folds × 400 monos = **6 s**.
+
+**Control empírico (spec NOTEBOOK) en pool FRESCO Dukascopy (3.938 cands LONG MOM+TREND, Z1 2015-21,
+verdad = monkey honesto Z2 n=1000 — Z2 sólo se usa ACÁ para validar, jamás en el GA):**
+
+| métrica (solo-Z1) → predice mk_oos_z2 | Spearman |
+|---|---|
+| **pf_is** (lo que el minero usa hoy) | **+0,168** |
+| **fitness B1** (mediana) | **+0,202** |
+| fitness B1 (Q25) | +0,192 |
+| _pf_oos (ve Z2, referencia)_ | _+0,790_ |
+
+- ✅ **El fitness B1 predice la honestidad Z2 MEJOR que el pf_is naive** (+0,20 vs +0,17), siendo
+  ambos solo-Z1 — la mejora que NOTEBOOK pedía, y **de-sesga el horizonte beta** (top-fitness 38-40%
+  Ret_96 vs 80% del pool).
+- ⚠️ **PERO en el top-50** (donde la selección importa) el config actual NO domina: top-por-fitness
+  mk_z2 medio 47 (mediana) / 52 (Q25) **< top-por-pf_is 58**. Con n=400/mediana el fitness ordena
+  mejor en lo grueso pero no afina el extremo.
+
+**HALLAZGO QUE CAMBIA EL CUADRO (R4, honestidad):** en el terreno fresco/limpio/largo, **pf_is tiene
++0,168 de transferencia Z1→Z2 real** (no ~0/negativo como en el diagnóstico viejo). El "anti-edge
+absoluto / todo-beta" era en parte artefacto de la data vieja (Z2 2023-25 re-usada + costuras). Acá
+hay señal débil pero REAL, y tanto pf_is como fitness la capturan parcialmente.
+
+**DECISIÓN PARA NOTEBOOK (B1 es tu brújula, no la cierro yo):** el mecanismo está correcto y
+unit-probado; globalmente bate al naive; pero la nitidez en el top depende de knobs ya expuestos:
+(a) **n_monkeys** (400→1000+ baja la varianza por fold), (b) **agregación** mediana vs Q25 (Q25
+afina el top), (c) la regla **n_valid<K/2 ⇒ 0** (quizá muy dura), (d) **λ** de parsimonia.
+Mi sugerencia: subir n a 800-1000 y Q25 antes de cablearlo al GA (B3), o aceptar el +0,20 como
+brújula "de lo grueso" si la prioridad es robustez sobre pico. Artefacto: `experimentos/
+validate_fitness_b1.csv`, runner `tools/validate_fitness_b1.py`.
+
 ## 2026-06-15 — [NOTEBOOK] B1: especificación del FITNESS v108 (monkey-OOS + CPCV + cascada + parsimonia)
 
 B0 cerrado y aprobado (monkey paralelo bit-idéntico, `monkey_batch`, ~16×). Diseño del fitness
