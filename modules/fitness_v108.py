@@ -60,7 +60,12 @@ def _rule_seed(base, rule, side, exit_label):
 
 def fitness_population(cands, data, col_map, ret_indices, z1_start, z1_end, cfg,
                       K=6, n_monkeys=400, lam=0.0, seed=12345, embargo_frac=0.1,
-                      min_t_fold=None, n_threads=None, agg='median'):
+                      min_t_fold=None, n_threads=None, agg='q25'):
+    # agg DEFAULT='q25' (B1 tuning cerrado 2026-06-16): el barrido validó Q25
+    # contra EURGBP (juez sin tendencia): de-sesga la beta en el top (14% largo
+    # vs 54-64% de la mediana) y mejora la coherencia (Spearman +0.09 vs +0.04).
+    # La mediana favorecía el horizonte largo en mercados laterales. Ver
+    # tools/barrido_b1.py y experimentos/barrido_b1.csv.
     """Fitness v108 para una POBLACIÓN de candidatos (batched, B0-paralelo).
 
     cands: iterable de (rule, side, exit_label).

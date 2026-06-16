@@ -79,24 +79,22 @@ gates) está validado; el cuello es el GENERADOR de hipótesis. Se construye el 
   es ruidosa. <b>Hallazgo importante:</b> en el terreno fresco/limpio/largo la transferencia Z1→Z2 es débil
   pero REAL — el "anti-edge absoluto" de antes era en parte artefacto de la data vieja.</div></div>
 
-<h2 id="preguntas">❓ Preguntas abiertas para NOTEBOOK</h2>
-<p style="font-size:13.5px">(Mariano las contesta desde la notebook. También quedan en BITACORA.md.)</p>
+<div class="card"><a href="desarrollo/v108_b1_tuning.png" target="_blank"><img src="desarrollo/v108_b1_tuning.png" alt="B1 tuning"></a>
+  <div class="pie"><span class="num">B1·tuning</span><b>El barrido cierra la config: n=1000 + Q25.</b> La clave
+  fue validar en <b>EURGBP (sin tendencia = juez justo, la beta no contamina)</b>. Izq: la mediana NO de-sesga
+  ahí (64% horizonte largo en el top); <b>Q25 sí (14%)</b>. Der: Q25 también predice mejor la honestidad en
+  EURGBP (+0,09 vs +0,04). En XAUUSD las dos van parejas. → <b>Q25 elegido</b> (NOTEBOOK: "Q25 solo si EURGBP
+  lo respalda" — y lo respalda).</div></div>
 
-<div class="q"><b>P1 — Tuning del fitness B1 antes de cablearlo al GA (B3).</b> El mecanismo está probado
-(skill→100, beta→0) y bate al naive en lo grueso (+0,20 vs +0,17), pero su top-50 no supera al de pf_is (mk_z2
-47 vs 58). Knobs disponibles: <b>(a)</b> n_monkeys 400→800/1000 (baja la varianza por fold); <b>(b)</b>
-agregación mediana vs Q25 (Q25 afinó: top 52 y 5/50 pasan ≥90 vs 47 y 2/50); <b>(c)</b> la regla
-<code>n_valid&lt;K/2 ⇒ fitness 0</code> (¿muy dura?); <b>(d)</b> λ de parsimonia. <b>¿Corro un barrido
-(n∈{400,1000}×{mediana,Q25}) y te traigo la tabla, o fijás vos la config?</b></div>
-
-<div class="q"><b>P2 — El diagnóstico cambió en terreno fresco.</b> Con la data Dukascopy nueva (Z2 2022-26,
-historia 2003+), pf_is muestra <b>+0,168 de transferencia Z1→Z2 real</b>, no el ~0/negativo del diagnóstico
-viejo. ¿Esto reabre algo del rumbo (p.ej. vale la pena exprimir la gramática vieja un poco más), o seguimos
-firmes con B2 (gramática formulaica) como estaba?</div>
-
-<div class="q"><b>P3 — Objetivo del fitness: ¿robustez o pico?</b> El fitness actual premia consistencia en Z1
-(mediana de folds), lo que sacrifica algo de pico. ¿La brújula del GA debe priorizar candidatos robustos-pero-
-modestos, o picos-altos-aunque-menos-consistentes? Define qué optimiza B3.</div>
+<h2 id="preguntas">✅ Preguntas — RESPONDIDAS por NOTEBOOK (2026-06-16)</h2>
+<div class="ok"><b>P1 — RESUELTA.</b> Barrido corrido con el juez justo (EURGBP). <b>Config elegida: n=1000 + Q25</b>
+(fijada como default en <code>fitness_v108.py</code>). Honestidad: el fitness le gana al naive donde la beta
+contamina (XAUUSD bull: de-sesga 78%→56%, Spearman +0,18 vs +0,16); en el mercado limpio (EURGBP) ambos van
+parejos. Ver gráfico B1·tuning.</div>
+<div class="ok"><b>P2 — seguimos a B2.</b> El +0,168 es señal débil REAL (parte del anti-edge viejo era artefacto
+de la data sucia). Rumbo igual, pronóstico algo mejor.</div>
+<div class="ok"><b>P3 — ROBUSTEZ, no pico.</b> El "pico" es la maldición del ganador / la beta. El fitness
+beta-neutral (mediana/Q25 de folds) ya prioriza robustez — se mantiene.</div>
 
 <div class="ok" style="margin-top:24px">Cómo se actualiza: <code>python tools/graficar_desarrollo.py</code> regenera los PNG
 desde los datos reales (CSV de validación, benchmarks). Cada bloque nuevo agrega su gráfico acá y su entrada en

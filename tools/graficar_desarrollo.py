@@ -23,7 +23,7 @@ def save(fig, name):
 
 # ── v108 — línea de tiempo de bloques del minero ──
 fig, ax = plt.subplots(figsize=(10, 2.4))
-blocks = [("B0\nmonkey paralelo", "hecho"), ("B1\nfitness CPCV", "hecho*"),
+blocks = [("B0\nmonkey paralelo", "hecho"), ("B1\nfitness CPCV", "hecho"),
           ("B2\ngramática", "pend"), ("B3\nGA + warm-start", "pend"),
           ("B4\nDSR + holdout + MT5", "pend")]
 for i, (lab, st) in enumerate(blocks):
@@ -104,5 +104,33 @@ if os.path.exists(csv):
     ax.set_title(f"B1 — fitness (Z1) vs honestidad (Z2) sobre {len(R):,} candidatos frescos\n"
                  "tendencia positiva real (Spearman +0,20) pero ruidosa: hay señal débil, no oro")
     save(fig, "v108_b1_scatter.png")
+
+# ── B1 tuning — el barrido: por qué Q25 (juez justo = EURGBP sin tendencia) ──
+bcsv = os.path.join(ROOT, "experimentos", "barrido_b1.csv")
+if os.path.exists(bcsv):
+    B = pd.read_csv(bcsv)
+    confs = ["pf_is(naive)", "n=1000,median", "n=1000,q25"]
+    lab = ["pf_is\n(naive)", "fitness\nmediana", "fitness\nQ25 ✓"]
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.4))
+    x = np.arange(len(confs)); w = 0.38
+    for ax, metric, ylab, title in (
+            (axL, 'top_long', '% horizonte largo en top-50  (más BAJO = mejor)',
+             'De-sesgo de beta (Ret_72/96 en el top)'),
+            (axR, 'rho', 'Spearman(métrica , honestidad Z2)',
+             'Poder predictivo Z1→Z2')):
+        for j, sym in enumerate(('XAUUSD', 'EURGBP')):
+            vals = [float(B[(B.config == c) & (B.sym == sym)][metric].iloc[0]) for c in confs]
+            cols = [AMBAR if sym == 'XAUUSD' else AZUL]
+            bars = ax.bar(x + (j - 0.5) * w, vals, w,
+                          color=(AMBAR if sym == 'XAUUSD' else AZUL),
+                          label=f"{sym}{' (bull, beta)' if sym=='XAUUSD' else ' (sin tendencia, juez justo)'}")
+            for b, v in zip(bars, vals):
+                ax.text(b.get_x() + w / 2, v + (1 if metric == 'top_long' else 0.004),
+                        f"{v:.0f}" if metric == 'top_long' else f"{v:.2f}", ha="center", fontsize=8)
+        ax.set_xticks(x); ax.set_xticklabels(lab); ax.set_title(title, fontsize=10.5)
+        ax.set_ylabel(ylab, fontsize=9); ax.legend(fontsize=8)
+    fig.suptitle("B1 TUNING — Q25 elegido: en EURGBP (juez sin beta) la mediana NO de-sesga (64% largo) "
+                 "y Q25 sí (14%)", fontsize=11.5, y=1.02)
+    save(fig, "v108_b1_tuning.png")
 
 print("\nListo: PNGs en docs/desarrollo/")

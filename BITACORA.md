@@ -6,6 +6,36 @@
 > numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
 > `python tools/graficar_desarrollo.py`.
 
+## 2026-06-16 — [BLANCA] B1 CONFIG CERRADA: barrido + validación EURGBP → **n=1000 + Q25**
+
+Ejecutado el barrido que pidió NOTEBOOK con el JUEZ JUSTO (EURGBP sin tendencia, donde la beta no
+contamina). Ingerí EURGBP (gate WARN benigno: las 31 costuras son del colapso real de la libra 2008,
+en Z0 sellada; assets.csv con Z1_Start 2015 / Z2_Start 2022, fricción forex aprox). Pools LONG MOM+TREND
+minados en Z1. Gráfico: `docs/desarrollo/v108_b1_tuning.png`.
+
+**Barrido n∈{400,1000} × {mediana,Q25}, juez = Spearman(fit,mk_z2) + de-sesgo beta (top %largo) + EURGBP:**
+
+| config | rho XAUUSD | rho EURGBP | top %largo XAUUSD | top %largo EURGBP |
+|---|---|---|---|---|
+| pf_is (naive) | +0,161 | +0,156 | 78% | 12% |
+| fitness mediana (n=1000) | +0,192 | +0,041 | 56% | **64%** ⚠️ |
+| **fitness Q25 (n=1000)** | +0,183 | +0,092 | 56% | **14%** ✅ |
+
+**Decisión (regla de NOTEBOOK "Q25 solo si EURGBP lo respalda"): Q25 GANA claro.** En EURGBP la mediana
+NO de-sesga (top 64% horizonte largo) y Q25 sí (14%), con mejor coherencia (rho +0,09 vs +0,04). n=400 y
+n=1000 dan casi igual en Q25 (+0,091 vs +0,092); elijo **n=1000** (menor varianza por fold, como sugirió
+NOTEBOOK). **`fitness_v108.py` queda con `agg='q25'` por default.** n_monkeys sigue per-call (300-500
+evolución / 5000 finalistas, según spec).
+
+**Honestidad (R4):** el fitness le gana al naive **donde la beta contamina** (XAUUSD bull: de-sesga
+78%→56%, Spearman +0,18 vs +0,16). En el mercado limpio (EURGBP) ambos van parejos en rho (Q25 +0,09 vs
+pf_is +0,16, pero pf_is ahí ya tiene 12% largo = no necesita de-sesgo). O sea: el fitness **se gana el
+sueldo exactamente cuando hace falta** (régimen con beta), que es el caso realista del GA. P1/P2/P3
+respondidas y reflejadas en `docs/desarrollo.html`.
+
+**Siguiente:** B2 (gramática formulaica) — lo arranca NOTEBOOK cuando vuelva Mariano (spec abajo). Herramientas:
+`tools/barrido_b1.py`, `experimentos/barrido_b1.csv`.
+
 ## 2026-06-16 — [NOTEBOOK] B2: especificación de la GRAMÁTICA FORMULAICA (operadores TS + factory on-demand)
 
 Diseño tras estudiar `x1_engine.py` (motor) y `translator_mql5.py` (registro). **El motor NO se toca**
