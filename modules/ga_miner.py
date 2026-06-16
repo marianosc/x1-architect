@@ -217,10 +217,17 @@ def crossover(a, b, rng):
 def run_ga(data, col_map, ret_indices, z1_start, z1_end, cfg, *,
            pop=1000, islands=('TREND', 'MOM', 'VOL', 'CYCLE'), generations=40,
            n_monkeys=1000, elite_frac=0.10, mut_rate=0.25, tourn_k=3,
-           migrate_every=10, random_frac=0.15, seed=2026, log=print):
+           migrate_every=10, random_frac=0.15, seed=2026, log=print,
+           extra_lhs=None, replace_lhs=False, seeds_override=None):
     rng = np.random.default_rng(seed)
     vocab = Vocab(col_map, slice(z1_start, z1_end), data)
-    seeds = warm_seeds(vocab)
+    # Inyección de vocabulario nuevo (price action / formulaico) al pool de cada
+    # isla: replace_lhs=True mina SOLO ese vocabulario (control limpio).
+    if extra_lhs:
+        for isl in islands:
+            vocab.island_lhs[isl] = list(extra_lhs) if replace_lhs \
+                else vocab.island_lhs[isl] + list(extra_lhs)
+    seeds = seeds_override if seeds_override is not None else warm_seeds(vocab)
     cache = {}              # geno_key -> fitness_core
     n_unique = [0]
 
