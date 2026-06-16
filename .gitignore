@@ -20,4 +20,6 @@ ghost_*.log
 b3_*.log
 control_*.log
 ga_b3.log
-fase*_done.txt
+barrido_b4.log
+b4_investigate.log
+*_done.txt

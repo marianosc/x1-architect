@@ -25,7 +25,7 @@ def save(fig, name):
 fig, ax = plt.subplots(figsize=(10, 2.4))
 blocks = [("B0\nmonkey paralelo", "hecho"), ("B1\nfitness CPCV", "hecho"),
           ("B2a\ngramática", "hecho*"), ("B3\nGA + warm-start", "hecho*"),
-          ("B4\nDSR + holdout + MT5", "pend")]
+          ("B4\nDSR + barrido", "hecho*")]
 for i, (lab, st) in enumerate(blocks):
     c = VERDE if st == "hecho" else (AMBAR if st.endswith("*") else "#d9d6cc")
     ax.add_patch(plt.Rectangle((i, 0), 0.9, 1, color=c))
@@ -188,5 +188,32 @@ if os.path.exists(gmeta) and os.path.exists(gwin):
     fig.suptitle("B3 — minero evolutivo (GA + warm-start): optimiza Z1 pero el holdout Z2 no supera el azar "
                  "(multiplicidad) → DSR (B4) decide", fontsize=10.5, y=1.02)
     save(fig, "v108_b3_ga.png")
+
+# ── B4 — barrido multi-activo/TF: el monkey "pasa" pero el DSR deflactado mata ──
+bcsv = os.path.join(ROOT, "experimentos", "barrido_b4.csv")
+icsv = os.path.join(ROOT, "experimentos", "b4_investigate.csv")
+if os.path.exists(bcsv) and os.path.exists(icsv):
+    B = pd.read_csv(bcsv); I = pd.read_csv(icsv)
+    B["lbl"] = B["sym"] + " " + B["tf"]; B["passpct"] = 100 * B["pass90"] / B["n_top"]
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(11.5, 4.6))
+    cols = [VERDE if p <= 0.05 else GRIS for p in B["binomial_p"]]
+    bars = axL.bar(B["lbl"], B["passpct"], color=cols)
+    axL.axhline(10, color=ROJO, ls="--", lw=1.5); axL.text(0.1, 12, "azar ~10%", color=ROJO, fontsize=9)
+    for b, p, n in zip(bars, B["passpct"], B["pass90"]):
+        axL.text(b.get_x() + b.get_width() / 2, p + 1.5, f"{int(n)}", ha="center", fontsize=8)
+    axL.set_ylabel("% del top-20 que pasa el monkey OOS (>=90)")
+    axL.set_title("JUEZ 1 — el monkey: 4/7 combos 'baten el azar'\n(verde = binomial p<=0,05) ¿hay edge?")
+    axL.tick_params(axis='x', rotation=35, labelsize=8)
+    il = I["sym"] + " " + I["tf"]
+    axR.bar(il, I["best_dsr"], color=AMBAR)
+    axR.axhline(0.95, color=ROJO, ls="--", lw=1.5); axR.text(0.1, 0.90, "umbral DSR 0,95", color=ROJO, fontsize=9)
+    for i, (v, no) in enumerate(zip(I["best_dsr"], I["n_oos_med"])):
+        axR.text(i, v + 0.02, f"{v:.2f}\n({no} tr)", ha="center", fontsize=8)
+    axR.set_ylim(0, 1.0); axR.set_ylabel("mejor DSR (Sharpe deflactado por N)")
+    axR.set_title("JUEZ 2 — el DSR (deflactado por ~40k pruebas): 0/4\nel 'edge' era ruido de pocos trades")
+    axR.tick_params(axis='x', rotation=20, labelsize=8)
+    fig.suptitle("B4 — barrido multi-activo/TF: el monkey marca 4 combos pero el DSR deflactado los MATA a todos "
+                 "→ no hay edge que sobreviva N", fontsize=10.5, y=1.02)
+    save(fig, "v108_b4_barrido.png")
 
 print("\nListo: PNGs en docs/desarrollo/")

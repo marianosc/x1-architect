@@ -2,6 +2,47 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+## 2026-06-16 — [BLANCA] B4 COMPLETO: el monkey marca 4 combos, el DSR los MATA a todos → "lo barato" agotado, materia prima nueva
+
+**B4 DSR de XAUUSD H1 (cierre formal):** N=47.928 pruebas → SR0 (máx Sharpe/trade bajo azar) 0,293; mejor
+ganador SR/trade 0,111 << SR0. **Mejor DSR 0,031, 0/20 significativos.** XAUUSD H1 cerrado: sin edge.
+
+**Barrido multi-activo/TF (7 corridas GA, mismas semillas, Z2 holdout intocable).** Ingerí EURUSD/GBPUSD/
+USDJPY H1 (gate PASS/WARN/PASS) + EURGBP H4 (WARN benigno); XAUUSD/EURGBP ya estaban. Gráfico:
+`docs/desarrollo/v108_b4_barrido.png`. **DOS JUECES, conclusiones opuestas — y el correcto gana:**
+
+| activo TF | máx mk_z2 | pasan ≥90 | binomial p | n_oos med | máx SR | SR0 | **DSR** |
+|---|---|---|---|---|---|---|---|
+| XAUUSD H1 | 92,7 | 1/20 | 0,878 | — | — | — | (B4) 0,03 |
+| EURUSD H1 | 39,9 | 0/20 | 1,000 | — | — | — | — |
+| **GBPUSD H1** | 93,2 | 8/20 | **0,000** | 200 | 0,059 | 0,182 | **0,045** |
+| USDJPY H1 | 93,1 | 1/20 | 0,878 | — | — | — | — |
+| **EURGBP H1** | 99,7 | 7/20 | **0,002** | 144 | 0,153 | 0,250 | **0,129** |
+| **XAUUSD H4** | 100 | 6/20 | **0,011** | 55 | 0,365 | 0,483 | **0,267** |
+| **EURGBP H4** | 99,5 | 15/20 | **0,000** | 68 | 0,326 | 0,266 | **0,599** |
+
+- **JUEZ 1 (monkey): 4/7 combos baten el azar** (binomial significativo) — parecía edge, sobre todo EURGBP
+  (el par lateral, mean-reversion plausible) y H4. **CONTRADECÍA "no hay edge en ningún lado".**
+- **JUEZ 2 (DSR deflactado por N): 0/4.** El monkey "pasaba" por **pocos trades** (n_oos 55-68 en H4 → el
+  monkey con pocas operaciones es poco fiable) y por la multiplicidad de 40k pruebas. El DSR — que pondera
+  el nº de trades Y deflacta por N — los liquida: el mejor (EURGBP H4) llega a **0,599**, sugestivo pero
+  lejos de 0,95.
+
+**LECCIÓN METODOLÓGICA (clave): el monkey solo NO alcanza como juez final; el DSR sí.** El barrido habría
+sido un falso descubrimiento de creerle al monkey. Encima la fricción forex la puse APROXIMADA (posible
+subestimación) → sesgaba A FAVOR de encontrar edge, y aun así el DSR mató todo: conclusión robusta.
+
+**VEREDICTO (agotado lo barato): NINGÚN (activo,TF) tiene edge que sobreviva la deflación.** Cierra el
+programa v108 sobre indicadores técnicos en mercados líquidos. **→ materia prima nueva** (roadmap de
+Mariano): (1) acción de precio como features nuevas, (2) destilar los ~50 libros del Vault para warm-starts
+con tesis más ricas. El pipeline (motor MT5-calibrado, monkey paralelo, fitness CPCV, GA, DSR) queda
+construido, probado y validado como infraestructura para esa próxima fase.
+
+**P para NOTEBOOK:** ¿confirmás el salto a materia prima nueva? Y de las dos vías, ¿cuál primero — price
+action (la implemento yo: features de OHLC/patrones) o el Vault (necesita que Mariano lo conecte)? Único
+matiz a registrar: EURGBP en H4 fue el menos lejano (DSR 0,6, pero con 68 trades); si en algún momento se
+quiere exprimir, sería con MÁS historia/trades, no con este largo.
+
 ## 2026-06-16 — [NOTEBOOK] Mariano: "agotemos lo barato" → B4 (DSR) + barrido multi-activo/TF
 
 Antes de invertir en materia prima nueva, agotar el pipeline YA construido.

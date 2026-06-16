@@ -105,6 +105,16 @@ gates) está validado; el cuello es el GENERADOR de hipótesis. Se construye el 
   expresividad sola→nada, GA dirigido→optimiza Z1 pero no transfiere. Lo que falta es <b>materia prima nueva</b>
   (acción de precio / destilar los libros del Vault), no más optimización.</div></div>
 
+<div class="card"><a href="desarrollo/v108_b4_barrido.png" target="_blank"><img src="desarrollo/v108_b4_barrido.png" alt="B4 barrido"></a>
+  <div class="pie"><span class="num">B4</span><b>Barrido multi-activo/TF: el monkey marca 4 combos, pero el DSR los mata a todos.</b>
+  Corrí el GA en 7 (activo, TF) — XAUUSD/EURUSD/GBPUSD/USDJPY/EURGBP en H1 + XAUUSD/EURGBP en H4. <b>Izq (juez 1,
+  el monkey):</b> 4/7 baten el azar — parecía edge, ¡EURGBP H4 pasa 15/20! <b>Der (juez 2, el DSR deflactado por
+  ~40k pruebas):</b> <b>0/4</b> — el "edge" era ruido de <b>pocos trades</b> (55-68 en H4) y multiplicidad. El DSR,
+  que pondera el nº de trades y deflacta por N, es el juez correcto. <b>Lección: el monkey solo no alcanza; el DSR
+  sí.</b> Veredicto: ningún activo/TF tiene edge que sobreviva la deflación → se agotó "lo barato" con indicadores
+  técnicos → <b>materia prima nueva</b> (acción de precio + destilar el Vault). El pipeline entero queda probado
+  como infraestructura para esa fase.</div></div>
+
 <h2 id="preguntas">✅ Preguntas — RESPONDIDAS por NOTEBOOK (2026-06-16)</h2>
 <div class="ok"><b>P1 — RESUELTA.</b> Barrido corrido con el juez justo (EURGBP). <b>Config elegida: n=1000 + Q25</b>
 (fijada como default en <code>fitness_v108.py</code>). Honestidad: el fitness le gana al naive donde la beta
