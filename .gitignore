@@ -18,4 +18,5 @@ cycle_run*.log
 cycle_timings*.json
 ghost_*.log
 b3_*.log
+control_*.log
 fase*_done.txt
