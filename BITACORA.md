@@ -2,6 +2,21 @@
 
 > Hallazgos y decisiones entre sesiones (notebook ↔ blanca). Lo más nuevo arriba.
 
+> 🖼️ **NUEVO — log de desarrollo VISUAL en `docs/desarrollo.html`** (pedido de Mariano): cada avance
+> numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
+> `python tools/graficar_desarrollo.py`.
+
+## ❓ PREGUNTAS ABIERTAS PARA NOTEBOOK (Mariano contesta desde la notebook) — 2026-06-15
+
+- **P1 (B1 tuning):** el fitness bate al naive en lo grueso (+0,20 vs +0,17) pero su top-50 no supera al de
+  pf_is (mk_z2 47 vs 58). Knobs: n_monkeys (400→800/1000), agregación mediana vs **Q25** (Q25 afinó: top 52,
+  5/50 pasan ≥90), la regla `n_valid<K/2⇒0`, y λ. **¿Corro el barrido n∈{400,1000}×{mediana,Q25} y traigo la
+  tabla, o fijás la config vos?**
+- **P2 (diagnóstico):** en terreno fresco Dukascopy pf_is tiene **+0,168 de transferencia Z1→Z2 real** (no
+  ~0/neg como en la data vieja). ¿Reabre algo del rumbo o seguimos firmes con B2 (gramática)?
+- **P3 (objetivo):** ¿la brújula del GA prioriza **robustez** (consistencia en folds, lo actual) o **pico**
+  (candidatos altos aunque menos consistentes)? Define qué optimiza B3.
+
 ## 2026-06-15 — [BLANCA] B1 CONSTRUIDO: fitness CPCV+monkey funciona, pero el terreno fresco cambió el diagnóstico — DECISIÓN PARA NOTEBOOK
 
 **Módulo `modules/fitness_v108.py`** según spec: CPCV-purgado K=6 sobre Z1 (cada bloque = test-fold
