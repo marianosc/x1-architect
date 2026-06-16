@@ -6,6 +6,48 @@
 > numérico deja su gráfico ahí. Las preguntas abiertas también están ahí. Regenerar con
 > `python tools/graficar_desarrollo.py`.
 
+## 2026-06-16 — [NOTEBOOK] B2: especificación de la GRAMÁTICA FORMULAICA (operadores TS + factory on-demand)
+
+Diseño tras estudiar `x1_engine.py` (motor) y `translator_mql5.py` (registro). **El motor NO se toca**
+(compara COLUMNAS, semántica única calibrada a MT5); se amplía el VOCABULARIO de tokens vía un
+**feature factory on-demand**. Hallazgo: el ADN v106 ya tiene operadores formulaicos "disfrazados"
+(`mom`=delta precio, `roc`, `slope`=pendiente EMA, `linreg`, `efficiency`, `vol_z`) pero SIEMPRE sobre
+precio/EMA. Falta aplicarlos a CUALQUIER indicador.
+
+**OPERADORES v1 (4; `cross`→v2 por requerir estado t-1/t-2):**
+- `delta_K(x)`  = x[t] − x[t−K]
+- `slope_K(x)`  = pendiente OLS de x sobre K barras (como linreg pero del indicador)
+- `ts_rank_W(x)` = #{ x[t−i] < x[t] , i=1..W−1 } / (W−1) ∈ [0,1]   ⭐ (normaliza nivel → robusto a régimen)
+- `dist_max_W(x)` = x[t] − max(x[t−W+1..t]) ; `dist_min_W(x)` = x[t] − min(...)
+
+**BASES (6):** rsi, natr, adx, cci, mom, close. **VENTANAS:** K∈{3,5,10} (delta/slope); W∈{20,50,100}
+(ts_rank/dist). **TOKEN:** `{op}{param}_{base}_sft` — ej. `tsrank100_natr_14_sft`, `delta5_rsi_14_sft`.
+
+**CLAVE DEL SHIFT (paridad):** el factory computa el operador SOBRE la columna `_sft` que ya está en
+el Parquet → el resultado ES la versión `_sft` del operador (porque `x_sft[t]=x[t−1]` ⇒ `op(x_sft)=op(x)_sft`).
+No hace falta la serie cruda. El minero usa el token `_sft` directamente; el motor lo compara como una
+columna más.
+
+**B2a (AHORA — Python, para experimentar):**
+1. `modules/formulaic.py`: `expand_formulaic(data, col_map, tokens)` → computa SOLO las columnas
+   formulaicas que la población usa, las agrega a la matriz en memoria + col_map (numpy/numba). NO
+   pre-computar todo en L1 (evita explotar el Parquet).
+2. Integrar antes de simular en L2 (minero) y en el fitness B1 / L3 (expandir los tokens de la población).
+3. Tests de cómputo de cada operador (valores correctos vs numpy de referencia) + determinismo.
+4. **CONTROL (¿aporta?):** aplicar el fitness B1 a un pool con vocabulario AMPLIADO vs gramática vieja
+   → ¿aparecen candidatos con mejor fitness/transferencia? Reportar (mismo juez beta-neutral: Spearman
+   + de-sesgo + EURGBP).
+
+**B2b (SOLO si B2a aporta):** helpers `X1_*` MQL5 de cada operador (componiendo sobre el indicador base)
++ test de PARIDAD Python↔MQL5 + extender `_resolve_operand`. Cierra la regla de oro.
+
+**REGLA DE ORO (matizada, decisión notebook):** se mina en Python (B2a) para EXPERIMENTAR barato, pero
+NINGUNA alpha con operadores formulaicos se COSECHA/DESPLIEGA sin su traducción+paridad (B2b). El gate de
+oro pasa de "antes de minar" a "antes de cosechar" — no se pierde la garantía de deploy, y no traducimos
+operadores que no demuestren aportar. (Si Mariano prefiere la regla estricta, hacemos B2a+B2b juntos.)
+
+Orden de trabajo en blanca: primero cerrar el barrido de B1 (abajo), después B2a. Pushear con tests + control.
+
 ## 2026-06-16 — [NOTEBOOK] Respuestas a P1/P2/P3 + B1 tuning: barrido + validación EURGBP (juez beta-neutral)
 
 B1 VALIDADO (notebook reprodujo los números exactos: fitness +0,202 > pf_is +0,168 vs mk_oos_z2;
