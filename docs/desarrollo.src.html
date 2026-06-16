@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Log de desarrollo — X1-Architect</title>
+<style>
+  :root { --verde:#1D9E75; --rojo:#E24B4A; --ambar:#BA7517; --gris:#5F5E5A; --azul:#2D6CA2; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; margin:0; background:#f7f6f3; color:#2c2c2a; line-height:1.55; }
+  header { background:#23302b; color:#f1efe8; padding:18px 32px; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; font-size:13px; color:#a9c6ba; }
+  nav { background:#34423c; padding:8px 32px; position:sticky; top:0; z-index:5; }
+  nav a { color:#e7efe9; text-decoration:none; font-size:13px; margin-right:18px; }
+  nav a:hover { color:#9FE1CB; }
+  main { max-width:1080px; margin:0 auto; padding:24px 32px 60px; }
+  h2 { font-size:17px; border-bottom:2px solid #d3d1c7; padding-bottom:6px; margin-top:38px; }
+  .card { background:#fff; border:1px solid #e2e0d8; border-radius:8px; overflow:hidden; margin:16px 0; }
+  .card img { width:100%; display:block; cursor:zoom-in; }
+  .card .pie { padding:11px 15px; font-size:13px; }
+  .card .pie b { font-size:13.5px; }
+  .num { display:inline-block; background:#23302b; color:#fff; border-radius:4px; padding:1px 8px; font-size:11px; margin-right:6px; }
+  .q { background:#fdf3e3; border-left:4px solid var(--ambar); padding:12px 16px; margin:14px 0; font-size:13.5px; border-radius:4px; }
+  .q b { color:var(--ambar); }
+  .ok { background:#e1f5ee; border-left:4px solid var(--verde); padding:10px 14px; font-size:13px; margin:14px 0; }
+  ul { font-size:14px; }
+  footer { text-align:center; font-size:12px; color:#888; padding:20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ Log de desarrollo visual — X1-Architect</h1>
+  <p>blanca (ejecución) ↔ notebook (diseño) · cada avance numérico deja su gráfico acá · actualizado 2026-06-15</p>
+</header>
+<nav>
+  <a href="#estado">Estado</a>
+  <a href="#bloques">Bloques v108</a>
+  <a href="#graficos">Gráficos</a>
+  <a href="#preguntas">Preguntas para NOTEBOOK</a>
+  <a href="bitacora.html">↗ bitácora del socio</a>
+</nav>
+<main>
+
+<h2 id="estado">Estado actual (2026-06-15)</h2>
+<div class="ok">
+<b>Rumbo: minero evolutivo v108 (Python puro, opción C).</b> El tribunal (motor MT5-calibrado, monkey,
+gates) está validado; el cuello es el GENERADOR de hipótesis. Se construye el minero en 5 bloques.
+<b>B0 (monkey paralelo) cerrado</b> · <b>B1 (fitness) construido</b>, mecanismo OK, tuning a decidir.
+</div>
+
+<h2 id="bloques">Bloques del minero v108</h2>
+<div class="card"><img src="desarrollo/v108_timeline.png" alt="timeline v108">
+  <div class="pie"><span class="num">mapa</span>Los 5 bloques: <b>B0</b> monkey paralelo (hecho) · <b>B1</b>
+  fitness CPCV (mecanismo hecho, tuning pendiente) · <b>B2</b> gramática formulaica · <b>B3</b> GA + warm-start
+  · <b>B4</b> selección DSR + holdout Z2 + reality check MT5.</div></div>
+
+<h2 id="graficos">Gráficos de los avances</h2>
+
+<div class="card"><a href="desarrollo/v108_b0_speedup.png" target="_blank"><img src="desarrollo/v108_b0_speedup.png" alt="B0 speedup"></a>
+  <div class="pie"><span class="num">B0</span><b>Monkey paralelo con paridad bit-idéntica.</b> Con <code>nogil</code>
+  + <code>monkey_batch</code> el monkey escala a 15,9× en 32 cores y da resultados IDÉNTICOS al serial (test 4/4).
+  Los 10.931×2 jobs que tardaban ~5,5 h pasan a ~14 min. Esto desbloquea el fitness B1 (que llama al monkey
+  muchísimas veces).</div></div>
+
+<div class="card"><a href="desarrollo/v108_b1_spearman.png" target="_blank"><img src="desarrollo/v108_b1_spearman.png" alt="B1 spearman"></a>
+  <div class="pie"><span class="num">B1</span><b>¿Qué métrica de Z1 predice la honestidad en Z2?</b> La pregunta
+  honesta es out-of-sample: usando SOLO Z1 (2015-21), ¿quién anticipa que un candidato será honesto en Z2
+  (2022-26)? El <b>fitness B1 (+0,202)</b> le gana al <b>pf_is naive (+0,168)</b> — la mejora pedida. (pf_oos
+  +0,79 no cuenta: mira Z2 directo, está de referencia.)</div></div>
+
+<div class="card"><a href="desarrollo/v108_b1_top50.png" target="_blank"><img src="desarrollo/v108_b1_top50.png" alt="B1 top50"></a>
+  <div class="pie"><span class="num">B1</span><b>El fitness de-sesga la beta, pero su top no afina aún.</b> El
+  horizonte beta (Ret_96) baja de 80% del pool a 38% en el top por fitness — bien. PERO el top-50 por fitness
+  tiene peor honestidad media en Z2 (47) que el top-50 por pf_is (58): con n=400/mediana ordena mejor "en lo
+  grueso" pero no afina el extremo. Ahí está la decisión de tuning.</div></div>
+
+<div class="card"><a href="desarrollo/v108_b1_scatter.png" target="_blank"><img src="desarrollo/v108_b1_scatter.png" alt="B1 scatter"></a>
+  <div class="pie"><span class="num">B1</span><b>La nube completa: hay señal débil, no oro.</b> Cada punto es un
+  candidato: fitness en Z1 (eje x) vs honestidad real en Z2 (eje y). La tendencia sube (Spearman +0,20) pero
+  es ruidosa. <b>Hallazgo importante:</b> en el terreno fresco/limpio/largo la transferencia Z1→Z2 es débil
+  pero REAL — el "anti-edge absoluto" de antes era en parte artefacto de la data vieja.</div></div>
+
+<div class="card"><a href="desarrollo/v108_b1_tuning.png" target="_blank"><img src="desarrollo/v108_b1_tuning.png" alt="B1 tuning"></a>
+  <div class="pie"><span class="num">B1·tuning</span><b>El barrido cierra la config: n=1000 + Q25.</b> La clave
+  fue validar en <b>EURGBP (sin tendencia = juez justo, la beta no contamina)</b>. Izq: la mediana NO de-sesga
+  ahí (64% horizonte largo en el top); <b>Q25 sí (14%)</b>. Der: Q25 también predice mejor la honestidad en
+  EURGBP (+0,09 vs +0,04). En XAUUSD las dos van parejas. → <b>Q25 elegido</b> (NOTEBOOK: "Q25 solo si EURGBP
+  lo respalda" — y lo respalda).</div></div>
+
+<h2 id="preguntas">✅ Preguntas — RESPONDIDAS por NOTEBOOK (2026-06-16)</h2>
+<div class="ok"><b>P1 — RESUELTA.</b> Barrido corrido con el juez justo (EURGBP). <b>Config elegida: n=1000 + Q25</b>
+(fijada como default en <code>fitness_v108.py</code>). Honestidad: el fitness le gana al naive donde la beta
+contamina (XAUUSD bull: de-sesga 78%→56%, Spearman +0,18 vs +0,16); en el mercado limpio (EURGBP) ambos van
+parejos. Ver gráfico B1·tuning.</div>
+<div class="ok"><b>P2 — seguimos a B2.</b> El +0,168 es señal débil REAL (parte del anti-edge viejo era artefacto
+de la data sucia). Rumbo igual, pronóstico algo mejor.</div>
+<div class="ok"><b>P3 — ROBUSTEZ, no pico.</b> El "pico" es la maldición del ganador / la beta. El fitness
+beta-neutral (mediana/Q25 de folds) ya prioriza robustez — se mantiene.</div>
+
+<div class="ok" style="margin-top:24px">Cómo se actualiza: <code>python tools/graficar_desarrollo.py</code> regenera los PNG
+desde los datos reales (CSV de validación, benchmarks). Cada bloque nuevo agrega su gráfico acá y su entrada en
+<code>BITACORA.md</code>. Se abre servido en localhost (ver <code>.claude/launch.json</code>).</div>
+
+</main>
+<footer>X1-Architect · log de desarrollo · doble click desde docs/desarrollo.html o servido en localhost</footer>
+</body>
+</html>
