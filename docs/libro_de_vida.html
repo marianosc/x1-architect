@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X1-Architect — Libro de Vida</title>
+<style>
+  :root{
+    --tinta:#1a1a18; --suave:#5c5b56; --linea:#e7e5df; --fondo:#ffffff;
+    --acento:#1d6f5c; --rojo:#b3402f; --ambar:#9a6a12; --azul:#2a5d86;
+    --cajaverde:#eef6f2; --cajaroja:#fbeeea; --cajaambar:#fbf4e6; --cajagris:#f6f5f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);
+    font-family:'Segoe UI',Helvetica,system-ui,sans-serif;line-height:1.65;font-size:16.5px}
+  header.hero{max-width:860px;margin:0 auto;padding:54px 28px 18px}
+  header.hero h1{font-size:34px;margin:0 0 6px;letter-spacing:-.5px}
+  header.hero .sub{font-size:18px;color:var(--suave);margin:0 0 8px}
+  header.hero .meta{font-size:13px;color:var(--suave);border-top:1px solid var(--linea);padding-top:12px;margin-top:18px}
+  main{max-width:860px;margin:0 auto;padding:10px 28px 80px}
+  nav.toc{background:var(--cajagris);border:1px solid var(--linea);border-radius:10px;padding:16px 22px;margin:24px 0 36px;font-size:14.5px}
+  nav.toc b{display:block;margin-bottom:8px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--suave)}
+  nav.toc a{color:var(--azul);text-decoration:none;display:inline-block;margin:3px 14px 3px 0}
+  nav.toc a:hover{text-decoration:underline}
+  h2{font-size:24px;margin:48px 0 4px;letter-spacing:-.3px}
+  h2 .cap{display:block;font-size:13px;color:var(--acento);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:2px}
+  h3{font-size:17px;margin:26px 0 6px;color:var(--tinta)}
+  p{margin:12px 0}
+  .lead{font-size:18px;color:#33322e}
+  .qa{margin:14px 0;padding:14px 18px;border-left:3px solid var(--linea);background:#fbfbf9;border-radius:0 8px 8px 0}
+  .qa .q{font-weight:600;color:var(--azul)}
+  .qa .a{margin-top:4px}
+  .hallazgo{background:var(--cajaroja);border-left:3px solid var(--rojo);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .leccion{background:var(--cajaverde);border-left:3px solid var(--acento);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .nota{background:var(--cajaambar);border-left:3px solid var(--ambar);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:18px 0}
+  th,td{border:1px solid var(--linea);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--cajagris);font-weight:600}
+  code{background:var(--cajagris);padding:1px 6px;border-radius:4px;font-size:13.5px;font-family:'Cascadia Code',Consolas,monospace}
+  .tl{list-style:none;padding:0;margin:18px 0}
+  .tl li{position:relative;padding:6px 0 16px 26px;border-left:2px solid var(--linea);margin-left:6px}
+  .tl li:before{content:'';position:absolute;left:-7px;top:10px;width:12px;height:12px;border-radius:50%;background:var(--acento)}
+  .tl b{color:var(--tinta)}
+  .veredicto{background:#111;color:#f3f1ea;border-radius:12px;padding:24px 26px;margin:30px 0}
+  .veredicto h3{color:#fff;margin-top:0}
+  .veredicto code{background:#2a2a28;color:#e9d9a8}
+  footer{max-width:860px;margin:0 auto;padding:24px 28px 60px;color:var(--suave);font-size:13px;border-top:1px solid var(--linea)}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;background:var(--cajaverde);color:var(--acento);font-weight:600}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>X1-Architect — Libro de Vida</h1>
+  <p class="sub">La búsqueda honesta de una ventaja real en el trading algorítmico, paso a paso.</p>
+  <p>Esta es la crónica de un proyecto que se propuso una pregunta simple y peligrosa:
+  <em>¿existe una estrategia de trading sistemática que de verdad funcione, y no solo que lo parezca?</em>
+  Lo que sigue es cómo la buscamos, qué encontramos en el camino, y por qué cada decisión fue la que fue.</p>
+  <p class="meta">Sistema X1-Architect · granja de minería de estrategias en Python + MetaTrader 5 ·
+  documento de síntesis, junio 2026 · uso interno</p>
+</header>
+
+<main>
+
+<nav class="toc">
+  <b>Recorrido</b>
+  <a href="#origen">1 · El origen</a>
+  <a href="#auditoria">2 · La auditoría</a>
+  <a href="#saneamiento">3 · El saneamiento</a>
+  <a href="#calibracion">4 · La calibración</a>
+  <a href="#anti-edge">5 · El primer veredicto</a>
+  <a href="#minero">6 · El minero v108</a>
+  <a href="#capstone">7 · El capstone</a>
+  <a href="#queda">8 · Lo que queda</a>
+  <a href="#leccion">9 · La lección</a>
+</nav>
+
+<p class="lead">El proyecto X1 es una <b>granja de minería de estrategias</b>: un sistema que genera millones
+de reglas de trading candidatas, las pone a competir, y trata de quedarse solo con las que tienen una
+ventaja real. La historia que sigue no es la de un descubrimiento triunfal — es algo más raro y más
+valioso: la de construir un juez tan honesto que fue capaz de decirnos la verdad incómoda.</p>
+
+<h2 id="origen"><span class="cap">Capítulo 1</span>El origen y el sueño</h2>
+<p>X1 nació como el primer proyecto de trading algorítmico de su autor, Mariano. La idea era elegante y
+propia: <b>minar reglas de entrada sin stop-loss ni take-profit</b>, con salida por número de velas, para
+aislar lo que él intuía —sin conocer todavía el término— como <b>"alpha puro"</b>: una ventaja en la
+señal misma, no rescatada por la gestión del trade.</p>
+<p>El sistema tenía una arquitectura por capas (L1 refinería de datos, L2 minero genético, L3 auditor,
+L4/L5 orquestación) y un tablero en Streamlit. Funcionaba… o eso parecía. El proyecto se abandonó.</p>
+<div class="qa"><span class="q">¿Qué se buscaba?</span>
+  <div class="a">Una estrategia rentable, encontrada por fuerza de cómputo en lugar de por intuición.</div></div>
+
+<h2 id="auditoria"><span class="cap">Capítulo 2</span>El revival: la auditoría despiadada</h2>
+<p>Al retomarlo (junio 2026), antes de añadir nada, se auditó el sistema existente. El diagnóstico fue duro
+y necesario:</p>
+<div class="hallazgo">
+  <b>Lo que estaba roto:</b>
+  <ul>
+    <li><b>Fusibles muertos:</b> el tablero ofrecía 9 filtros de robustez (monkey, monte carlo, walk-forward…)
+      pero el auditor real solo aplicaba 1. Los demás eran botones que no hacían nada.</li>
+    <li><b>El auditor medía otra cosa:</b> evaluaba una salida distinta a la que el minero generaba.</li>
+    <li><b>El OOS estaba quemado:</b> la re-auditoría repetida usaba los datos "fuera de muestra" para
+      seleccionar — dejaban de ser fuera de muestra.</li>
+    <li><b>El intérprete de reglas vivía duplicado en 5 lugares</b>, con semánticas divergentes.</li>
+    <li><b>Los robots generados no compilaban</b> ni cerraban posiciones.</li>
+  </ul>
+</div>
+<p>Pero el hallazgo más importante no era un bug. Era una <b>lección de la experiencia previa de Mariano</b>:</p>
+<div class="leccion"><b>Los backtests hermosos en Python se desmoronan al confrontarlos contra MetaTrader 5,
+y MT5 se parece a la realidad.</b> De nada sirve minar reglas si no se las confronta contra el mercado real.
+Esto se convirtió en el principio rector: <b>MT5 como juez de verdad.</b></div>
+<div class="qa"><span class="q">¿Por qué importó?</span>
+  <div class="a">Porque definió el orden de prioridades: primero sanear y construir un juez confiable;
+  después, recién, buscar la ventaja. Sin un juez honesto, cualquier "descubrimiento" es un autoengaño.</div></div>
+
+<h2 id="saneamiento"><span class="cap">Capítulo 3</span>El saneamiento: construir un juez honesto</h2>
+<p>Se reconstruyó el corazón del sistema con una sola obsesión: que todas las capas midieran con el mismo
+metro, y que ese metro no mintiera.</p>
+<ul>
+  <li><b>Motor Único</b> (<code>x1_engine</code>): una sola fuente de verdad para señales, salidas y fricción.
+    Se acabaron las 5 semánticas divergentes.</li>
+  <li><b>Monkey Test</b> (aporte de Marc Cortázar): 5.000 "monos" recorren el histórico real entrando al azar
+    con la misma cadencia y exposición que la estrategia. Si la estrategia no le gana a los monos, su
+    "ganancia" era solo la deriva del mercado, no habilidad. Umbrales exigentes: superar al 99% de los monos
+    en entrenamiento, al 90% fuera de muestra.</li>
+  <li><b>Excursion Score</b> (aporte de Alan Tomillero): mide la calidad de la <em>entrada</em>
+    (recorrido a favor vs. en contra), ideal para la filosofía sin SL/TP.</li>
+</ul>
+<div class="leccion">El monkey es la idea central de todo lo que vino después: <b>no preguntamos "¿ganó
+dinero?", sino "¿ganó más que el puro azar con su mismo estilo?"</b>. Esa es la única definición de ventaja
+que no se puede falsificar a uno mismo.</div>
+
+<h2 id="calibracion"><span class="cap">Capítulo 4</span>La calibración: anclar el simulador a la realidad</h2>
+<p>Para que el principio "MT5 como verdad" fuera operativo, se calibró el simulador de Python contra el
+Strategy Tester de MetaTrader 5, trade a trade, usando una estrategia "canario".</p>
+<table>
+  <tr><th>Qué se midió</th><th>Resultado</th></tr>
+  <tr><td>Coincidencia de precios de entrada</td><td><b>96,7%</b> dentro de medio spread</td></tr>
+  <tr><td>Divergencia final de la curva de capital (Python vs MT5)</td><td><b>−0,009%</b> — prácticamente idénticas</td></tr>
+  <tr><td>Fricción real de XAUUSD en el broker</td><td>0,97 pts/trade (el sistema viejo asumía 0,3 — mentía 3×)</td></tr>
+</table>
+<p>A partir de aquí, la simulación en Python <em>era</em> el tester de MT5. La granja podía confiar en sus
+propios números.</p>
+<div class="nota">Detalle fino que costó entender: la decisión se toma al cierre de una vela usando datos de
+la vela anterior; en MT5 eso aparece como un desfase de una vela. No era un bug — era la firma de la
+sincronía correcta, y se probó con precios, no con suposiciones.</div>
+
+<h2 id="anti-edge"><span class="cap">Capítulo 5</span>El primer veredicto: el espejismo y el anti-edge</h2>
+<p>Con el juez calibrado, se dejó correr la granja. Y aparecieron dos verdades incómodas.</p>
+<h3>El espejismo del apilamiento</h3>
+<p>El motor imputaba ganancias como si se pudieran abrir muchas posiciones solapadas a la vez — una cartera
+apalancada que ni el robot real ni los monos podían ejecutar. <b>Buena parte de la "cosecha" histórica era
+ese espejismo de apalancamiento.</b> Se corrigió a <b>posición única</b> (una operación por vez, como el robot
+real). Y entonces, sobre el terreno honesto:</p>
+<div class="hallazgo"><b>Anti-edge.</b> De 212 estrategias de élite, <b>0 superaron el listón fuera de muestra</b>
+(el azar habría dado ~21; probabilidad de que fuera casualidad ≈ 2 en 10.000 millones). Las "mejores"
+estrategias en entrenamiento rendían <em>peor que el azar</em> en datos nuevos. La maldición del ganador,
+en estado puro.</div>
+<div class="qa"><span class="q">¿Qué nos dijo esto?</span>
+  <div class="a">Que la minería aleatoria de osciladores no producía ninguna ventaja real. El cuello de
+  botella no era el juez (que funcionaba), sino <b>el generador de hipótesis</b>: buscar a ciegas en un
+  espacio pobre solo encontraba sobreajuste. Esa fue la tesis que definió la fase siguiente.</div></div>
+
+<h2 id="minero"><span class="cap">Capítulo 6</span>El minero v108: atacar el generador</h2>
+<p>Si el problema era <em>cómo</em> se generaban las ideas, había que reconstruir el generador. Pero primero
+hubo que renovar la materia prima y el juez. Se descargaron <b>23 años de datos limpios</b> de Dukascopy
+(XAUUSD y forex, 2003–2026, validados con un control de calidad propio), y se redefinieron las zonas por
+fecha: <b>contexto sellado (pre-2015)</b>, <b>entrenamiento (2015–2021)</b> y <b>tribunal virgen (2022–2026)</b>,
+este último intocable hasta el veredicto final.</p>
+<p>El minero nuevo se construyó por bloques, cada uno respondiendo a una pregunta concreta:</p>
+<table>
+  <tr><th>Bloque</th><th>Qué se buscó</th><th>Resultado</th></tr>
+  <tr><td><b>B0 — Monkey paralelo</b></td><td>Que el juez escalara para usarse a gran escala</td>
+    <td>De 5,5 h a ~14 min, con resultados <em>bit a bit idénticos</em> (sin perder fidelidad)</td></tr>
+  <tr><td><b>B1 — Fitness honesto</b></td><td>Que la brújula del minero premiara ventaja real, no sobreajuste</td>
+    <td>El fitness mide "cuánto supera al monkey fuera de muestra", validado en bloques cruzados; predice
+    la honestidad mejor que el criterio viejo y <b>neutraliza la beta de mercado</b></td></tr>
+  <tr><td><b>B2 — Gramática formulaica</b></td><td>Dar al minero un lenguaje más expresivo (no solo "indicador &gt; umbral")</td>
+    <td>Construida, pero <b>al azar no aporta</b>: más expresividad sin búsqueda dirigida es solo más basura</td></tr>
+  <tr><td><b>B3 — Algoritmo genético + warm-start</b></td><td>Búsqueda dirigida, sembrada con hipótesis con tesis económica</td>
+    <td>Optimizó el entrenamiento de forma brillante (96,5/100)… <b>pero no transfirió al tribunal</b></td></tr>
+  <tr><td><b>B4 — Barrido multi-activo + DSR</b></td><td>¿Es solo el oro, o el método? Y deflactar por nº de pruebas</td>
+    <td>El monkey marcó 4 candidatos, pero el <b>Deflated Sharpe Ratio los mató a todos</b></td></tr>
+  <tr><td><b>B5 — Acción de precio</b></td><td>Probar la geometría del precio (velas, rupturas, estructura)</td>
+    <td><b>Tampoco supera la deflación</b></td></tr>
+</table>
+<div class="nota">Un momento revelador en B4: el monkey, por sí solo, marcó 4 estrategias como ganadoras —
+parecía el descubrimiento esperado. Pero el <b>Deflated Sharpe Ratio</b> (que descuenta el espejismo de
+haber probado decenas de miles de combinaciones) las desenmascaró a las cuatro. Lección: <b>el monkey no
+alcanza como juez final; hace falta deflactar por la cantidad de intentos.</b> El sistema atrapó su propio
+falso positivo.</div>
+
+<h2 id="capstone"><span class="cap">Capítulo 7</span>El capstone: el edge no está en el precio</h2>
+<p>Al juntar todas las etapas, el patrón es inequívoco:</p>
+<ul>
+  <li>Minería aleatoria → anti-edge.</li>
+  <li>Más expresividad sola → no aporta.</li>
+  <li>Búsqueda genética dirigida → optimiza el pasado, no transfiere al futuro.</li>
+  <li>Otros activos y timeframes → nada sobrevive la deflación.</li>
+  <li>Geometría del precio → tampoco.</li>
+</ul>
+<div class="veredicto">
+  <h3>Veredicto, con rigor estadístico</h3>
+  <p>En todo el programa, <b>ningún método, activo ni timeframe superó el umbral de significancia deflactado</b>
+  (<code>DSR ≥ 0,95</code>). El mejor de todos llegó a 0,60 y se quedó lejos.</p>
+  <p style="margin-bottom:0"><b>El edge no está en el OHLC</b> (ni en los indicadores técnicos ni en la
+  geometría del precio) de estos mercados líquidos. Lo demostramos con un rigor que la enorme mayoría de los
+  operadores minoristas nunca alcanza: en lugar de enamorarnos del 96,5 de in-sample, lo deflactamos y vimos
+  que era humo.</p>
+</div>
+
+<h2 id="queda"><span class="cap">Capítulo 8</span>Lo que queda y lo que ya ganamos</h2>
+<p>Que el edge no esté en el precio no cierra el proyecto: redirige la búsqueda hacia <b>información que el
+precio no contiene</b>.</p>
+<table>
+  <tr><th>Vía abierta</th><th>Idea</th></tr>
+  <tr><td><b>Features macro</b> <span class="pill">info nueva</span></td>
+    <td>El oro se mueve por tasas reales y por el dólar (DXY), no por un RSI. Esa es información que el OHLC
+    del oro no tiene.</td></tr>
+  <tr><td><b>Arbitraje estadístico / pares</b> <span class="pill">info nueva</span></td>
+    <td>Explotar la relación entre activos (oro–plata, oro–dólar): la reversión del spread, no la dirección.</td></tr>
+  <tr><td>Cartera de débiles</td>
+    <td>Combinar muchas señales con micro-ventaja real y descorrelacionadas (técnica, no materia prima).</td></tr>
+</table>
+<div class="leccion"><b>Lo que ya es nuestro, pase lo que pase:</b> una infraestructura de validación honesta
+—motor calibrado a MT5, monkey paralelo, validación cruzada, algoritmo genético y deflación estadística—
+que sirve para juzgar <em>cualquier</em> estrategia futura. Y algo que en trading vale oro: <b>saber con
+certeza qué no funciona, para no quemar capital en espejismos.</b></div>
+
+<h2 id="leccion"><span class="cap">Epílogo</span>La lección</h2>
+<p>Este proyecto no encontró (todavía) la estrategia ganadora. Encontró algo más difícil de construir y más
+escaso: <b>un método que se niega a mentirse a sí mismo.</b> Cada capítulo fue desmontar un espejismo —el
+auditor que medía otra cosa, el OOS quemado, el apilamiento imposible, la beta disfrazada de habilidad, el
+falso positivo que el deflactado mató—.</p>
+<p>La mayoría de los sistemas de trading se construyen para confirmar la esperanza de su autor. Este se
+construyó para ponerla a prueba sin piedad. Y por eso, cuando algún día diga "esto sí funciona", se le va a
+poder creer.</p>
+
+</main>
+<footer>
+  X1-Architect · Libro de Vida · síntesis del proyecto a junio 2026 · documento de uso interno.
+  La crónica técnica detallada vive en <code>BITACORA.md</code> y en el log visual de desarrollo.
+</footer>
+</body>
+</html>
