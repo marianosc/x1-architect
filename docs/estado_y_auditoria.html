@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X1 — Estado del proyecto & Auditoría</title>
+<style>
+  :root{
+    --tinta:#1a1a18;--suave:#5c5b56;--linea:#e7e5df;--fondo:#fff;
+    --verde:#1d6f5c;--rojo:#b3402f;--ambar:#9a6a12;--azul:#2a5d86;
+    --alta:#b3402f;--media:#9a6a12;--baja:#5c8a7a;
+    --cajaverde:#eef6f2;--cajagris:#f6f5f2;--cajaazul:#eef3f8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);
+    font-family:'Segoe UI',Helvetica,system-ui,sans-serif;line-height:1.6;font-size:16px}
+  .wrap{max-width:820px;margin:0 auto;padding:40px 26px 80px}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px}
+  .sub{color:var(--suave);margin:0 0 22px;font-size:16px}
+  h2{font-size:20px;margin:38px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--linea)}
+  .resumen{background:var(--cajaazul);border:1px solid #d5e2ee;border-radius:12px;padding:20px 24px;margin:20px 0 8px}
+  .resumen h3{margin:0 0 8px;font-size:16px;color:var(--azul)}
+  .resumen p{margin:8px 0}
+  .resumen b{color:var(--tinta)}
+  .veredicto{background:#111;color:#f1efe8;border-radius:10px;padding:14px 18px;margin:14px 0;font-size:14.5px}
+  .veredicto code{background:#2b2b28;color:#e9d9a8;padding:1px 5px;border-radius:4px}
+  .progress{position:sticky;top:0;background:var(--fondo);padding:12px 0 10px;z-index:5;border-bottom:1px solid var(--linea);margin-bottom:8px}
+  .progress .lbl{font-size:13px;color:var(--suave);display:flex;justify-content:space-between;margin-bottom:6px}
+  .bar{height:9px;background:var(--cajagris);border-radius:6px;overflow:hidden}
+  .bar>span{display:block;height:100%;background:var(--verde);width:0;transition:width .25s}
+  ul.check{list-style:none;padding:0;margin:10px 0}
+  ul.check li{border:1px solid var(--linea);border-radius:9px;padding:11px 14px;margin:8px 0;display:flex;gap:12px;align-items:flex-start;transition:background .15s,opacity .15s}
+  ul.check li:hover{background:#fcfcfa}
+  ul.check input{margin-top:3px;width:18px;height:18px;flex:0 0 auto;cursor:pointer}
+  ul.check .body{flex:1}
+  ul.check .t{font-weight:600}
+  ul.check small{display:block;color:var(--suave);font-size:13px;margin-top:2px}
+  ul.check code{background:var(--cajagris);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:Consolas,monospace}
+  li.done{opacity:.55}
+  li.done .t{text-decoration:line-through}
+  .prio{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;margin-right:8px;vertical-align:2px;color:#fff}
+  .p-alta{background:var(--alta)}.p-media{background:var(--media)}.p-baja{background:var(--baja)}.p-info{background:var(--azul)}
+  .ok{background:var(--cajaverde);border-left:3px solid var(--verde);padding:11px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14.5px}
+  footer{color:var(--suave);font-size:13px;margin-top:36px;border-top:1px solid var(--linea);padding-top:16px}
+  .reset{font-size:12px;color:var(--azul);background:none;border:1px solid var(--linea);border-radius:6px;padding:4px 10px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>X1-Architect — Estado &amp; Auditoría</h1>
+  <p class="sub">Panel de retoma: dónde está el proyecto y qué queda por hacer. Los tildes se guardan solos en tu navegador.</p>
+
+  <div class="resumen">
+    <h3>📋 Resumen del proyecto</h3>
+    <p><b>Qué es:</b> una granja de minería de estrategias de trading en Python + MetaTrader 5. Genera reglas
+    candidatas, las valida contra un juez honesto y busca quedarse solo con las que tienen ventaja real.</p>
+    <p><b>Dónde está (junio 2026):</b> el minero <b>v108</b> está <b>completo y validado</b>. Se construyó por
+    bloques: monkey paralelo (B0), fitness honesto (B1), gramática formulaica (B2), algoritmo genético con
+    warm-start (B3), barrido multi-activo (B4) y acción de precio (B5).</p>
+    <div class="veredicto">
+      <b>Veredicto, con rigor estadístico:</b> ningún método, activo ni timeframe superó el umbral deflactado
+      (<code>DSR ≥ 0,95</code>). <b>El edge no está en el OHLC</b> (ni indicadores técnicos ni geometría del
+      precio) de estos mercados líquidos. No es un fracaso: es una verdad medida, que casi nadie alcanza.
+    </div>
+    <p><b>Lo que quedó construido:</b> un pipeline de validación honesto — motor calibrado a MT5 (−0,009%),
+    monkey paralelo bit-idéntico, validación cruzada (CPCV), algoritmo genético y deflación estadística (DSR)
+    — reutilizable para juzgar <em>cualquier</em> estrategia futura. Historia completa en
+    <code>libro_de_vida.html</code>.</p>
+    <p><b>Cómo se retoma:</b> salir del OHLC hacia información que el precio no contiene → <b>features macro del
+    oro</b> (tasas reales, DXY) o <b>pares oro–plata</b>. Ver la sección "Vías para retomar" abajo.</p>
+  </div>
+
+  <div class="progress">
+    <div class="lbl"><span>Progreso de la auditoría</span><span id="prog">0 / 0</span></div>
+    <div class="bar"><span id="bar"></span></div>
+  </div>
+
+  <h2>🔒 Seguridad</h2>
+  <div class="ok"><b>Sin hallazgos urgentes.</b> No hay credenciales en el repo (sin <code>.env</code>; los
+  <code>.ini</code> son configs de backtest sin passwords; el bridge no maneja credenciales). No hay
+  <code>eval</code>/<code>exec</code>/<code>os.system</code>/<code>pickle</code> inseguro. <code>.gitignore</code>
+  correcto. Repo privado.</div>
+  <ul class="check">
+    <li><input type="checkbox" id="s1"><div class="body"><span class="prio p-baja">BAJA</span><span class="t">Sacar de git los <code>.ini</code> generados</span>
+      <small>Opcional. <code>mt5_config.ini</code> y <code>tester_canario01.ini</code> son configs que se
+      regeneran y traen rutas de la máquina (no son secretos). Se pueden ignorar en git.</small></div></li>
+  </ul>
+
+  <h2>🛠️ Calidad y mejoras</h2>
+  <ul class="check">
+    <li><input type="checkbox" id="q1"><div class="body"><span class="prio p-alta">ALTA</span><span class="t">Centralizar rutas hardcodeadas en variables de entorno</span>
+      <small><code>C:/temp</code> aparece en <code>L1</code>, <code>L3</code>, <code>data_loader</code> y varios
+      <code>tools</code>; las rutas de blanca (Darwinex, hash del terminal) en <code>mt5_bridge</code>. Con
+      <code>X1_TEMP_DIR</code>/<code>X1_MT5_PATH</code> el sistema correría en cualquier máquina, no solo en blanca.</small></div></li>
+    <li><input type="checkbox" id="q2"><div class="body"><span class="prio p-media">MEDIA</span><span class="t">Reemplazar los <code>except: pass</code> silenciosos por un log del error</span>
+      <small>3 lugares: <code>L1:54</code>, <code>L3:257</code>, <code>plots:51</code>. Ocultan errores reales;
+      cambiar a <code>except Exception as e: log(e)</code>.</small></div></li>
+    <li><input type="checkbox" id="q3"><div class="body"><span class="prio p-media">MEDIA</span><span class="t">Agregar test unitario de <code>L1</code> (ingesta)</span>
+      <small>La capa que parsea fechas Dukascopy y detecta el símbolo (donde vivió el bug del <code>"2026"</code>)
+      es crítica y no tiene test. El resto de v108 está bien testeado (9 archivos).</small></div></li>
+    <li><input type="checkbox" id="q4"><div class="body"><span class="prio p-media">MEDIA</span><span class="t">Traducir a MQL5 los operadores nuevos <em>antes</em> de cosechar</span>
+      <small>Deuda de la "regla de oro": los operadores formulaicos (B2) y de acción de precio (B5) aún no tienen
+      helper <code>X1_*</code> MQL5. Sin urgencia mientras se experimenta; obligatorio antes de desplegar una alpha
+      que los use.</small></div></li>
+    <li><input type="checkbox" id="q5"><div class="body"><span class="prio p-baja">BAJA</span><span class="t">Calibrar la fricción forex por canario</span>
+      <small>En <code>assets.csv</code> la fricción forex es aproximada (no medida contra MT5 como XAUUSD). Sesga a
+      favor de encontrar edge. Calibrar si alguna vez se minan pares en serio.</small></div></li>
+    <li><input type="checkbox" id="q6"><div class="body"><span class="prio p-baja">BAJA</span><span class="t">Micro-limpieza de imports muertos</span>
+      <small><code>import time</code> sin usar en <code>ga_miner</code>, y algún import suelto. Cosmético.</small></div></li>
+  </ul>
+
+  <h2>🧹 Pendientes inmediatos (borrado manual en Z:)</h2>
+  <div class="ok">El repo ya quedó limpio y pusheado (granja vieja retirada) y se borraron 313 MB de basura local.
+  Falta el Drive, que el harness protege de borrados — <b>lo borrás vos en el explorador</b> (en
+  <code>Z:\Mi unidad\PYTHON\38_42_X1_V_105 SISTEMA X1 PYTHON\</code>). Total: ~940 MB.</div>
+  <ul class="check">
+    <li><input type="checkbox" id="p1"><div class="body"><span class="prio p-media">~381 MB</span><span class="t">Borrar la carpeta <code>COSECHA\</code></span>
+      <small>Toda v105/v106 (data pre-Dukascopy, verificada vieja). No contiene los Parquets de v108.</small></div></li>
+    <li><input type="checkbox" id="p2"><div class="body"><span class="prio p-media">~560 MB</span><span class="t">Borrar los 3 CSV viejos de <code>data\</code></span>
+      <small><code>EURUSD_M1_UTCPlus02…csv</code> (el podrido), <code>XAUUSD_A_UTC2…csv</code>,
+      <code>USATECHIDXUSD_M1_UTCPlus02…csv</code>. Reemplazados por los Dukascopy. <b>Conservá</b> los 7 CSV
+      <code>2026.6.13…dukas…</code> y <code>assets.csv</code>.</small></div></li>
+    <li><input type="checkbox" id="p3"><div class="body"><span class="prio p-baja">chico</span><span class="t">Borrar los <code>.py</code> v105 duplicados de la raíz de Z: + la carpeta <code>modules\</code> de Z:</span>
+      <small>Copia vieja; la versión viva del código está en el repo git. Conservá en Z:: <code>data\</code>,
+      <code>docs\</code>, <code>aportes\</code> y los <code>.txt</code>.</small></div></li>
+  </ul>
+
+  <h2>🚀 Vías para retomar (elegí la próxima)</h2>
+  <div class="ok">El OHLC se agotó con rigor. Las dos primeras traen <b>información que el precio no contiene</b>
+  (la mayor probabilidad de aportar algo nuevo); las otras dos son técnica/insumo para después.</div>
+  <ul class="check">
+    <li><input type="checkbox" id="v1"><div class="body"><span class="prio p-info">INFO NUEVA</span><span class="t">Features macro del oro</span>
+      <small>El oro se mueve por tasas reales y por el dólar (DXY), no por un RSI. Conseguir/alinear DXY, real
+      yields (FRED), VIX. Es lo que el OHLC del oro no tiene.</small></div></li>
+    <li><input type="checkbox" id="v2"><div class="body"><span class="prio p-info">INFO NUEVA</span><span class="t">Pares / arbitraje estadístico (oro–plata)</span>
+      <small>Explotar la relación entre activos (reversión del spread), no la dirección. Solo necesita que esté
+      la data de <b>XAGUSD</b> (estaba en el roadmap de descargas).</small></div></li>
+    <li><input type="checkbox" id="v3"><div class="body"><span class="prio p-baja">DESPUÉS</span><span class="t">Cartera de débiles (metodología SQX)</span>
+      <small>Combinar muchas señales con micro-ventaja real, descorrelacionadas. Es una técnica que se aplica
+      <em>sobre</em> una materia prima con micro-edge (macro/pares), no sola.</small></div></li>
+    <li><input type="checkbox" id="v4"><div class="body"><span class="prio p-baja">INSUMO</span><span class="t">Destilar los ~50 libros del Vault → semillas de warm-start</span>
+      <small>Extraer hipótesis de entrada de las mentorías/libros del segundo cerebro. Valor mayor si aparecen
+      estrategias basadas en macro/inter-mercado (las técnicas ya se agotaron).</small></div></li>
+  </ul>
+
+  <footer>
+    X1-Architect · panel de estado y auditoría · junio 2026 · uso interno.
+    <button class="reset" onclick="if(confirm('¿Destildar todo?')){localStorage.clear();location.reload()}">Reiniciar tildes</button>
+  </footer>
+</div>
+
+<script>
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  function paint(b){ b.closest('li').classList.toggle('done', b.checked); }
+  function updateProgress(){
+    var done = boxes.filter(function(b){return b.checked}).length;
+    document.getElementById('prog').textContent = done + ' / ' + boxes.length;
+    document.getElementById('bar').style.width = (boxes.length? 100*done/boxes.length : 0) + '%';
+  }
+  boxes.forEach(function(b){
+    if(localStorage.getItem('x1_'+b.id) === 'true'){ b.checked = true; }
+    paint(b);
+    b.addEventListener('change', function(){
+      localStorage.setItem('x1_'+b.id, b.checked);
+      paint(b); updateProgress();
+    });
+  });
+  updateProgress();
+</script>
+</body>
+</html>
